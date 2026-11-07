@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>セラー</title>
+<style>
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+:root{--bg:#f4f4f2;--card:#fff;--line:#e3e2de;--ink:#0b0b0b;--sub:#52514e;--mute:#8a8984;--acc:#2a78d6;--neg:#c62828;--pos:#1b7f4e;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--tabh:58px}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
+body{overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
+header h1{font-size:17px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view{padding:12px 12px calc(var(--tabh) + 24px + env(safe-area-inset-bottom));max-width:100%;overflow-x:hidden}
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#tabs button{height:var(--tabh);border:0;background:none;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0}
+#tabs button .ic{font-size:19px;line-height:1}
+#tabs button.on{color:var(--acc);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;min-width:0}
+.card h2{font-size:15px;margin:0 0 8px}
+.row{display:flex;align-items:center;gap:8px;min-width:0}
+.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 12px;min-height:40px}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.btn.dan{background:#fff;border-color:var(--neg);color:var(--neg);font-weight:600}
+.btn.sm{padding:4px 10px;min-height:32px;font-size:13px}
+.muted{color:var(--mute);font-size:13px}
+.neg{color:var(--neg)}.pos{color:var(--pos)}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.mnav b{font-size:17px}
+table.sum{width:100%;border-collapse:collapse;table-layout:fixed}
+table.sum th,table.sum td{border-bottom:1px solid var(--line);padding:9px 4px;text-align:right;font-variant-numeric:tabular-nums}
+table.sum th{text-align:left;color:var(--sub);font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--sub);margin:4px 0 6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+#chartTip{font-size:13px;color:var(--sub);min-height:20px;font-variant-numeric:tabular-nums}
+svg.chart{width:100%;height:auto;display:block;touch-action:manipulation}
+input.search,.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;min-width:0;max-width:100%}
+.f{margin-bottom:10px;min-width:0}
+.f label{display:block;font-size:12px;color:var(--sub);margin-bottom:3px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f2>.f{min-width:0}
+.grp{font-size:13px;font-weight:600;color:var(--sub);margin:14px 2px 6px}
+.srow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;display:grid;grid-template-columns:52px 1fr;gap:10px;min-width:0}
+.srow .th,.cell .th{background:#ececea center/cover no-repeat;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:9px;font-weight:600;letter-spacing:.5px;overflow:hidden}
+.srow .th{width:52px;height:52px}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.srow .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--sub);margin-top:2px}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);background:#f7f7f5;color:var(--sub);white-space:nowrap}
+.badge.m{border-color:#f3b2a9;color:#b3261e}.badge.y{border-color:#c4b7f0;color:#5136b8}.badge.r{border-color:#a9cdf3;color:#1a5fb4}.badge.a{border-color:#f0d58a;color:#8a6100}
+.stbtn{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--acc);background:#fff;color:var(--acc);white-space:nowrap}
+.stbtn.done{border-color:var(--line);color:var(--sub);background:#f7f7f5}
+.six{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;font-size:12px;font-variant-numeric:tabular-nums}
+.six div{display:flex;justify-content:space-between;gap:4px;min-width:0}
+.six span{color:var(--mute);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:5px 11px;font-size:13px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0;padding:0;text-align:left}
+.cell .th{width:100%;aspect-ratio:1/1;border-radius:0}
+.cell .lb{padding:4px 6px}
+.cell .pr{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.cell .cn{font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fab{position:fixed;right:16px;bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom));z-index:7;width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:30px;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+#sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#sheet .sh{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
+#sheet .sh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sheet .body{padding:12px 12px 110px}
+.sec{font-size:12px;font-weight:700;color:var(--sub);margin:4px 0 8px;letter-spacing:.3px}
+.bigp{text-align:center;padding:12px;border-radius:10px;background:#f7f7f5;margin:6px 0 4px}
+.bigp .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:21;display:grid;grid-template-columns:1fr 2fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+.thumbbox{display:flex;align-items:center;gap:10px}
+.thumbbox .th{width:72px;height:72px;flex:none;border-radius:8px;background:#ececea;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:10px;font-weight:600;overflow:hidden}
+#modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .box{background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;max-height:90vh;overflow:auto}
+#modal .box h3{margin:0 0 8px;font-size:16px}
+#modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+#modal video{width:100%;border-radius:8px;background:#000}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 84px);z-index:50;background:#222;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;max-width:90vw}
+.chset{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:end;margin-bottom:8px}
+.chset .f{margin:0}
+.wip{color:var(--mute);border-style:dashed}
+.empty-note{text-align:center;color:var(--mute);padding:30px 0}
+</style>
+</head>
+<body>
+<header><h1 id="title">セラー</h1></header>
+<main id="view"></main>
+<nav id="tabs">
+  <button data-tab="analysis"><span class="ic">📊</span>分析</button>
+  <button data-tab="sales"><span class="ic">🧾</span>売上管理表</button>
+  <button data-tab="master"><span class="ic">📦</span>商品マスタ</button>
+  <button data-tab="link"><span class="ic">🔗</span>連携</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
+</nav>
+<button class="fab" id="fab" hidden aria-label="新規登録">＋</button>
+<div id="sheet" hidden></div>
+<div id="modal" hidden></div>
+<input type="file" id="restoreFile" accept="application/json,.json" hidden>
+<input type="file" id="thumbFile" accept="image/*" hidden>
+<script>
+"use strict";
+const APP_VER = "1.0.0";
+const DB_NAME = "seller_app";
+const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
+const ST_ORDER = ["stock","listed","deal","sold","cand"];
+const CH_KEYS = ["m","y","r","a"];
+const DEFAULT_SETTINGS = {ch:{m:{name:"メルカリ",fee:10,ship:160},y:{name:"Yahoo!フリマ",fee:5,ship:160},r:{name:"ラクマ",fee:10,ship:150},a:{name:"ヤフオク",fee:10,ship:160}},pack:30,target:30};
+const COND_CHIPS = ["帯あり","初版","特典つき","やや傷あり","傷あり","日焼け","良好"];
+const SHIP_METHODS = ["ゆうパケット","ゆうパケットポスト","ゆうパケットプラス","ネコポス","宅急便コンパクト","宅急便","ゆうパック","定形外郵便","クリックポスト","レターパック","その他"];
+const KINDS = {sale:"売上", buy:"仕入のみ"};
+
+/* ---------- IndexedDB（meta=状態1件 / imgs=写真） ---------- */
+let _db = null;
+function openDB(){
+  if (_db) return Promise.resolve(_db);
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
+      if (!db.objectStoreNames.contains("imgs")) db.createObjectStore("imgs");
+    };
+    r.onsuccess = () => { _db = r.result; res(_db); };
+    r.onerror = () => rej(r.error);
+  });
+}
+function idb(store, mode, fn){
+  return openDB().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, mode);
+    const req = fn(tx.objectStore(store));
+    let val;
+    if (req) req.onsuccess = () => { val = req.result; };
+    tx.oncomplete = () => res(val);
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  }));
+}
+const idbGet = (s, k) => idb(s, "readonly", o => o.get(k));
+const idbPut = (s, k, v) => idb(s, "readwrite", o => o.put(v, k));
+const idbDel = (s, k) => idb(s, "readwrite", o => o.delete(k));
+const idbKeys = (s) => idb(s, "readonly", o => o.getAllKeys());
+
+/* ---------- 状態 ---------- */
+let S = emptyState();
+function emptyState(){
+  return {schema:2, items:[], biblio:{}, settings:cleanSettings(null), templates:[], expenses:[], queue:[], meta:{}};
+}
+function saveState(){ return idbPut("meta", "state", S); }
+async function loadState(){
+  const v = await idbGet("meta", "state");
+  if (v && Array.isArray(v.items)) S = Object.assign(emptyState(), v, {settings: cleanSettings(v.settings)});
+}
+
+/* ---------- 共通 ---------- */
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function num(v){
+  if (v === null || v === undefined || v === "") return 0;
+  const x = Number(String(v).replace(/[,，円¥￥\s]/g, ""));
+  return Number.isFinite(x) ? x : 0;
+}
+function yen(v){ return (v < 0 ? "-¥" : "¥") + Math.abs(Math.round(v)).toLocaleString("ja-JP"); }
+function pct(v){ return v === null ? "—" : v.toFixed(1) + "%"; }
+function isPlainObj(o){ return o && typeof o === "object" && !Array.isArray(o); }
+function today(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function normDate(d){
+  const m = String(d ?? "").match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  return m ? m[1] + "-" + m[2].padStart(2,"0") + "-" + m[3].padStart(2,"0") : "";
+}
+function monthKey(d){ const n = normDate(d); return n ? n.slice(0,7) : ""; }
+function addMonth(mk, k){ let [y, m] = mk.split("-").map(Number); m += k; while (m < 1){ m += 12; y--; } while (m > 12){ m -= 12; y++; } return y + "-" + String(m).padStart(2,"0"); }
+function mLabel(mk){ const [y, m] = mk.split("-"); return y + "年" + Number(m) + "月"; }
+function newId(){ return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function chName(k){ const c = S.settings.ch[k]; return c ? c.name : (k ? String(k) : "—"); }
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); }
+
+function cleanSettings(src){
+  const s = isPlainObj(src) ? src : {};
+  const out = {ch:{}, pack:DEFAULT_SETTINGS.pack, target:DEFAULT_SETTINGS.target};
+  // 既知キー以外もデータとしては保持（落とさない）。ただし __proto__ 等は除外
+  for (const k of Object.keys(s)) if (k !== "ch" && k !== "__proto__" && k !== "constructor" && k !== "prototype") out[k] = s[k];
+  const sc = isPlainObj(s.ch) ? s.ch : {};
+  for (const k of CH_KEYS){
+    const d = DEFAULT_SETTINGS.ch[k], c = isPlainObj(sc[k]) ? sc[k] : {};
+    out.ch[k] = {
+      name: typeof c.name === "string" && c.name ? c.name : d.name,
+      fee: c.fee !== undefined && c.fee !== "" ? num(c.fee) : d.fee,
+      ship: c.ship !== undefined && c.ship !== "" ? num(c.ship) : d.ship
+    };
+  }
+  out.pack = s.pack !== undefined && s.pack !== "" ? num(s.pack) : DEFAULT_SETTINGS.pack;
+  out.target = s.target !== undefined && s.target !== "" ? num(s.target) : DEFAULT_SETTINGS.target;
+  return out;
+}
+
+/* ---------- 計算（§3） ---------- */
+function feeRateOf(it, set){
+  if (it.feeRate !== undefined && it.feeRate !== null && it.feeRate !== "") return num(it.feeRate);
+  const c = (set || S.settings).ch[it.soldCh];
+  return c ? num(c.fee) : 0;
+}
+function feeOf(price, rate){ return Math.floor((price * rate + 1e-7) / 100); }
+function calc(it, set){
+  const price = num(it.soldPrice), rate = feeRateOf(it, set), fee = feeOf(price, rate);
+  const cost = num(it.cost), ship = num(it.ship), pack = num(it.pack), other = num(it.other);
+  const profit = price - cost - ship - pack - fee - other;
+  const margin = price ? Math.round(profit / price * 1000) / 10 : null;
+  return {price, rate, fee, cost, ship, pack, other, profit, margin, costTotal: cost + ship + pack + fee + other};
+}
+function monthAgg(mk){
+  const a = {sales:0, cost:0, profit:0, n:0};
+  for (const it of S.items) if (it.st === "sold" && monthKey(it.soldDate) === mk){
+    const c = calc(it); a.sales += c.price; a.cost += c.costTotal; a.profit += c.profit; a.n++;
+  }
+  a.margin = a.sales ? Math.round(a.profit / a.sales * 1000) / 10 : null;
+  return a;
+}
+
+/* ---------- 取り込み・書き出し（§2） ---------- */
+function parseBackup(json){
+  const root = isPlainObj(json) ? json : null;
+  if (!root) throw new Error("JSONの形式が違います");
+  const d = isPlainObj(root.data) ? root.data : root;
+  if (!Array.isArray(d.items)) throw new Error("items が見つかりません");
+  const items = [];
+  const seen = new Set();
+  for (const raw of d.items){
+    if (!isPlainObj(raw)) continue;
+    const it = JSON.parse(JSON.stringify(raw));
+    if (it.id === undefined || it.id === null || it.id === "") it.id = newId();
+    it.id = String(it.id);
+    while (seen.has(it.id)) it.id = it.id + "_" + Math.random().toString(36).slice(2, 5);
+    seen.add(it.id);
+    if (typeof it.thumb !== "string") it.thumb = "";
+    if (typeof it.buyer !== "string") it.buyer = "";
+    if (typeof it.shipMethod !== "string" || !it.shipMethod) it.shipMethod = "ゆうパケット";
+    if (!Array.isArray(it.condChips)) it.condChips = [];
+    it.condChips = it.condChips.filter(c => typeof c === "string");
+    items.push(it);
+  }
+  const clone = v => JSON.parse(JSON.stringify(v));
+  return {
+    schema: 2,
+    items,
+    biblio: isPlainObj(d.biblio) ? clone(d.biblio) : {},
+    settings: cleanSettings(d.settings),
+    templates: Array.isArray(d.templates) ? clone(d.templates) : [],
+    expenses: Array.isArray(d.expenses) ? clone(d.expenses) : [],
+    queue: Array.isArray(d.queue) ? clone(d.queue) : [],
+    meta: isPlainObj(d.meta) ? clone(d.meta) : {}
+    // hunt は取り込まない（SSSワークスの担当）
+  };
+}
+function buildExport(){
+  const data = {schema:2, items:S.items, queue:S.queue, biblio:S.biblio, settings:S.settings, templates:S.templates, expenses:S.expenses, meta:S.meta};
+  return {app:"SSS", key:"seller_app", source:"seller", ver:APP_VER, schema:2, exportedAt:new Date().toISOString(), data: JSON.parse(JSON.stringify(data))};
+}
+async function applyRestore(next){
+  // 直前の状態を控えとして保存
+  await idbPut("meta", "snap", {at:new Date().toISOString(), state:S});
+  // 新しい items が参照しない写真は削除
+  const keep = new Set(next.items.map(i => i.thumb).filter(Boolean));
+  for (const k of await idbKeys("imgs")) if (!keep.has(k)) await idbDel("imgs", k);
+  for (const it of next.items) if (it.thumb && !(await idbGet("imgs", it.thumb))) it.thumb = "";
+  S = next;
+  thumbCache.clear();
+  await saveState();
+}
+function countSt(items){ const c = {}; for (const it of items) c[it.st] = (c[it.st] || 0) + 1; return c; }
+function stSummary(items){ const c = countSt(items); return ST_ORDER.filter(k => c[k]).map(k => ST_LABEL[k] + " " + c[k]).concat(Object.keys(c).filter(k => !ST_LABEL[k]).map(k => (k || "未設定") + " " + c[k])).join("／"); }
+
+/* ---------- 写真 ---------- */
+const thumbCache = new Map();
+async function thumbURL(id){
+  if (!id) return "";
+  if (thumbCache.has(id)) return thumbCache.get(id);
+  const v = await idbGet("imgs", id).catch(() => null);
+  const u = typeof v === "string" && /^data:image\/(jpeg|png|webp|gif);base64,/.test(v) ? v : "";
+  thumbCache.set(id, u);
+  return u;
+}
+function thumbHTML(id){ return id ? `<div class="th" data-thumb="${esc(id)}">NO IMAGE</div>` : `<div class="th">NO IMAGE</div>`; }
+async function fillThumbs(root){
+  for (const el of root.querySelectorAll("[data-thumb]")){
+    const u = await thumbURL(el.getAttribute("data-thumb"));
+    if (u){ el.textContent = ""; const im = document.createElement("img"); im.alt = ""; im.src = u; el.appendChild(im); }
+  }
+}
+function resizeImage(file, max = 360){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, max / Math.max(im.width, im.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", 0.82));
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("画像を読み込めません")); };
+    im.src = url;
+  });
+}
+
+/* ---------- 画面 ---------- */
+const UI = {tab:"analysis", month:null, salesQ:"", masterF:"all"};
+const $view = document.getElementById("view");
+function setTab(t){
+  UI.tab = t;
+  for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === t);
+  document.getElementById("fab").hidden = t !== "master";
+  render();
+}
+function render(){
+  const titles = {analysis:"分析", sales:"売上管理表", master:"商品マスタ", link:"連携", settings:"設定"};
+  document.getElementById("title").textContent = "セラー｜" + titles[UI.tab];
+  ({analysis:renderAnalysis, sales:renderSales, master:renderMaster, link:renderLink, settings:renderSettings})[UI.tab]();
+  window.scrollTo && window.scrollTo(0, 0);
+}
+
+/* 4-1 分析 */
+function renderAnalysis(){
+  if (!UI.month) UI.month = today().slice(0, 7);
+  const a = monthAgg(UI.month);
+  const months = []; for (let i = 5; i >= 0; i--) months.push(addMonth(UI.month, -i));
+  const series = months.map(m => monthAgg(m));
+  $view.innerHTML = `
+  <div class="card">
+    <div class="mnav"><button class="btn sm" data-act="mprev" aria-label="前月">◀ 前月</button><b id="curMonth">${mLabel(UI.month)}</b><button class="btn sm" data-act="mnext" aria-label="翌月">翌月 ▶</button></div>
+    <table class="sum" id="sumTable">
+      <tr><th>売上</th><td data-k="sales">${yen(a.sales)}</td></tr>
+      <tr><th>コスト</th><td data-k="cost">${yen(a.cost)}</td></tr>
+      <tr><th>純利益</th><td data-k="profit" class="${a.profit < 0 ? "neg" : ""}">${yen(a.profit)}</td></tr>
+      <tr><th>利益率</th><td data-k="margin">${pct(a.margin)}</td></tr>
+      <tr><th>売却件数</th><td data-k="n">${a.n}件</td></tr>
+    </table>
+    <div class="muted" style="margin-top:6px">コスト＝仕入額＋送料＋梱包＋手数料＋経費（売却日で集計）</div>
+  </div>
+  <div class="card">
+    <h2>月別推移（直近6か月）</h2>
+    <div class="legend"><span><i style="background:var(--s1)"></i>売上</span><span><i style="background:var(--s2)"></i>コスト</span><span><i style="background:var(--s3)"></i>純利益</span></div>
+    ${chartSVG(months, series)}
+    <div id="chartTip">グラフをタップすると月の値を表示します</div>
+  </div>`;
+}
+function chartSVG(months, series){
+  const W = 340, H = 190, L = 44, R = 10, T = 10, B = 26;
+  const keys = [["sales","var(--s1)"],["cost","var(--s2)"],["profit","var(--s3)"]];
+  let max = 0, min = 0;
+  for (const s of series) for (const [k] of keys){ max = Math.max(max, s[k]); min = Math.min(min, s[k]); }
+  if (max === min) max = min + 1000;
+  const step = niceStep((max - min) / 4);
+  max = Math.ceil(max / step) * step; min = Math.floor(min / step) * step;
+  const x = i => L + (W - L - R) * (months.length === 1 ? 0.5 : i / (months.length - 1));
+  const y = v => T + (H - T - B) * (1 - (v - min) / (max - min));
+  let g = "";
+  for (let v = min; v <= max + 1e-6; v += step){
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#b9b8b3" : "#ecebe7"}" stroke-width="1"/>`;
+    g += `<text x="${L - 4}" y="${y(v) + 3}" text-anchor="end" font-size="9" fill="#8a8984">${shortYen(v)}</text>`;
+  }
+  months.forEach((m, i) => { g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#52514e">${Number(m.slice(5))}月</text>`; });
+  for (const [k, col] of keys){
+    const pts = series.map((s, i) => x(i).toFixed(1) + "," + y(s[k]).toFixed(1)).join(" ");
+    g += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    series.forEach((s, i) => { g += `<circle cx="${x(i)}" cy="${y(s[k])}" r="4" fill="${col}" stroke="#fff" stroke-width="2"/>`; });
+  }
+  months.forEach((m, i) => {
+    const w = (W - L - R) / Math.max(1, months.length - 1);
+    g += `<rect data-act="tip" data-i="${i}" x="${x(i) - w / 2}" y="0" width="${w}" height="${H}" fill="transparent"/>`;
+  });
+  chartSVG.last = {months, series};
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="売上・コスト・純利益の月別推移">${g}</svg>`;
+}
+function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1)))); for (const k of [1, 2, 2.5, 5, 10]) if (raw <= k * p) return k * p; return 10 * p; }
+function shortYen(v){ return Math.abs(v) >= 10000 ? (v / 10000).toFixed(Math.abs(v) % 10000 ? 1 : 0) + "万" : String(v); }
+
+/* 4-2 売上管理表 */
+function salesRows(){
+  const q = UI.salesQ.trim().toLowerCase();
+  return S.items.filter(it => (it.st === "sold" || it.st === "deal") && (!q || String(it.name ?? "").toLowerCase().includes(q)));
+}
+function renderSales(){
+  const rows = salesRows();
+  const deal = rows.filter(r => r.st === "deal");
+  const sold = rows.filter(r => r.st === "sold").sort((a, b) => normDate(b.soldDate).localeCompare(normDate(a.soldDate)));
+  const groups = [];
+  if (deal.length) groups.push(["取引未完了", deal, "deal"]);
+  const byM = new Map();
+  for (const it of sold){ const k = monthKey(it.soldDate) || "日付なし"; if (!byM.has(k)) byM.set(k, []); byM.get(k).push(it); }
+  for (const [k, list] of byM) groups.push([k === "日付なし" ? k : mLabel(k), list, k]);
+  $view.innerHTML = `
+  <div class="row" style="margin-bottom:10px"><input class="search grow" id="salesQ" type="search" placeholder="商品名で検索" value="${esc(UI.salesQ)}"><button class="btn" data-act="csv">CSV出力</button></div>
+  <div id="salesList">${groups.length ? groups.map(([lab, list, k]) => `<div class="grp" data-grp="${esc(k)}">${esc(lab)}（${list.length}件）</div>` + list.map(saleRow).join("")).join("") : `<div class="empty-note">該当する売上がありません</div>`}</div>`;
+  fillThumbs($view);
+}
+function saleRow(it){
+  const c = calc(it);
+  const date = normDate(it.st === "deal" ? (it.soldDate || it.listDate) : it.soldDate) || "—";
+  const stb = it.st === "deal" ? `<button class="stbtn" data-act="complete" data-id="${esc(it.id)}">取引中 → 完了にする</button>` : `<span class="stbtn done">取引完了</span>`;
+  return `<div class="srow" data-act="edit" data-id="${esc(it.id)}">
+    ${thumbHTML(it.thumb)}
+    <div style="min-width:0"><div class="nm">${esc(it.name || "（名称未設定）")}</div>
+      <div class="meta"><span>${esc(date)}</span><span class="${c.profit < 0 ? "neg" : "pos"}">純利益 ${yen(c.profit)}</span><span class="badge ${CH_KEYS.includes(it.soldCh) ? it.soldCh : ""}">${esc(chName(it.soldCh))}</span>${stb}</div></div>
+    <div class="six" data-six>
+      <div><span>販売価格</span><b data-k="price">${yen(c.price)}</b></div>
+      <div><span>仕入額</span><b data-k="cost">${yen(c.cost)}</b></div>
+      <div><span>送料</span><b data-k="ship">${yen(c.ship)}</b></div>
+      <div><span>手数料</span><b data-k="fee">${yen(c.fee)}</b></div>
+      <div><span>純利益</span><b data-k="profit" class="${c.profit < 0 ? "neg" : ""}">${yen(c.profit)}</b></div>
+      <div><span>利益率</span><b data-k="margin">${pct(c.margin)}</b></div>
+    </div></div>`;
+}
+function csvCell(v){
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s; // 数式注入対策
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function buildCSV(rows){
+  const head = ["商品名","販路","仕入日","出品日","売却日","販売価格","仕入額","送料","梱包費","手数料","純利益","利益率"];
+  const lines = [head.join(",")];
+  for (const it of rows){
+    const c = calc(it);
+    lines.push([it.name, chName(it.soldCh), normDate(it.date), normDate(it.listDate), normDate(it.soldDate), c.price, c.cost, c.ship, c.pack, c.fee, c.profit, c.margin === null ? "" : c.margin.toFixed(1)].map(csvCell).join(","));
+  }
+  return "﻿" + lines.join("\r\n") + "\r\n";
+}
+function download(name, text, type){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* 4-3 商品マスタ */
+const MASTER_F = [["all","全て"],["stock","仕入れ済み"],["listed","出品中"],["deal","取引中"],["sold","売却済み"]];
+function masterRows(){ return S.items.filter(it => UI.masterF === "all" || it.st === UI.masterF); }
+function gridPrice(it){
+  if ((it.st === "sold" || it.st === "deal") && num(it.soldPrice)) return num(it.soldPrice);
+  if (num(it.listPrice)) return num(it.listPrice);
+  return num(it.cost);
+}
+function renderMaster(){
+  const rows = masterRows();
+  $view.innerHTML = `
+  <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}">${l}</button>`).join("")}</div>
+  <div class="muted" style="margin-bottom:6px" id="masterCount">${rows.length}件</div>
+  <div class="grid" id="masterGrid">${rows.map(it => `<button class="cell" data-act="edit" data-id="${esc(it.id)}" data-st="${esc(it.st)}">${thumbHTML(it.thumb)}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div></div></button>`).join("")}</div>
+  ${rows.length ? "" : `<div class="empty-note">該当する商品がありません</div>`}`;
+  fillThumbs($view);
+}
+
+/* 新規登録（バーコード／ISBN手入力） */
+function normIsbn(s){ return String(s ?? "").replace(/[^0-9Xx]/g, "").toUpperCase(); }
+function isbn10to13(s){ const b = "978" + s.slice(0, 9); let t = 0; for (let i = 0; i < 12; i++) t += Number(b[i]) * (i % 2 ? 3 : 1); return b + ((10 - t % 10) % 10); }
+function isbn13to10(s){ if (!s.startsWith("978")) return ""; const b = s.slice(3, 12); let t = 0; for (let i = 0; i < 9; i++) t += Number(b[i]) * (10 - i); const c = (11 - t % 11) % 11; return b + (c === 10 ? "X" : String(c)); }
+function lookupBiblio(code){
+  const n = normIsbn(code); if (!n) return null;
+  const cands = [n];
+  if (n.length === 10) cands.push(isbn10to13(n));
+  if (n.length === 13) cands.push(isbn13to10(n));
+  for (const [k, v] of Object.entries(S.biblio)) if (cands.includes(normIsbn(k)) && isPlainObj(v)) return v;
+  return null;
+}
+function biblioToItem(b, code){
+  const pick = (...ks) => { for (const k of ks){ const v = b[k]; if (Array.isArray(v) && v.length) return v.join("、"); if (v !== undefined && v !== null && v !== "") return String(v); } return ""; };
+  return {code: normIsbn(code), name: pick("title","name"), author: pick("author","authors"), pub: pick("pub","publisher"), vols: pick("vols"), cat: pick("cat")};
+}
+let scanStream = null;
+function stopScan(){ if (scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; } }
+function openNew(){
+  const canScan = typeof window.BarcodeDetector === "function" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+  showModal(`<h3>新規登録</h3>
+    ${canScan ? `<button class="btn pri" style="width:100%;margin-bottom:10px" data-act="scan">📷 バーコードを読み取る</button><video id="scanVideo" playsinline muted hidden></video>` : `<div class="muted" style="margin-bottom:8px">この環境ではバーコード読み取りが使えません。ISBNを手入力してください。</div>`}
+    <div class="f"><label>ISBN（手入力）</label><input id="isbnIn" inputmode="numeric" autocomplete="off" placeholder="978…"></div>
+    <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn" data-act="manual">書誌なしで手入力</button><button class="btn pri" data-act="isbnGo">ISBNで登録</button></div>`);
+}
+async function startScan(){
+  const v = document.getElementById("scanVideo");
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
+    v.hidden = false; v.srcObject = scanStream; await v.play();
+    const det = new window.BarcodeDetector({formats:["ean_13"]});
+    const loop = async () => {
+      if (!scanStream) return;
+      try {
+        const r = await det.detect(v);
+        const hit = r.map(x => x.rawValue).find(x => /^97[89]\d{10}$/.test(x)) || (r[0] && r[0].rawValue);
+        if (hit){ stopScan(); document.getElementById("isbnIn").value = hit; isbnGo(); return; }
+      } catch (e) {}
+      setTimeout(loop, 250);
+    };
+    loop();
+  } catch (e) { stopScan(); toast("カメラを使えません。手入力してください"); }
+}
+function isbnGo(){
+  const code = normIsbn(document.getElementById("isbnIn").value);
+  if (!code){ toast("ISBNを入力してください"); return; }
+  const b = lookupBiblio(code);
+  closeModal();
+  if (b){ openEditor(null, biblioToItem(b, code)); toast("書誌を自動入力しました"); }
+  else { openEditor(null, {code}); toast("書誌が見つかりません。手入力してください"); }
+}
+
+/* 4-4 編集画面 */
+let ED = null; // {id, isNew, draft, thumbNew, thumbRemoved}
+function blankItem(){
+  return {id:newId(), kind:"sale", masterId:"", name:"", cat:"", st:"stock", condChips:[], code:"", vols:"", pub:"", author:"",
+    date:today(), listDate:"", shipDate:"", soldDate:"", listPrice:"", soldPrice:"", cost:"", ship:"", pack:S.settings.pack, feeRate:"", soldFee:"", soldCh:"m",
+    buyer:"", shipMethod:"ゆうパケット", memo:"", thumb:"", hist:[]};
+}
+function openEditor(id, preset){
+  let draft, isNew = !id;
+  if (id){ const it = S.items.find(i => i.id === id); if (!it) return; draft = JSON.parse(JSON.stringify(it)); }
+  else draft = Object.assign(blankItem(), preset || {});
+  if (!Array.isArray(draft.condChips)) draft.condChips = [];
+  ED = {id:draft.id, isNew, draft, thumbNew:null, thumbRemoved:false};
+  const d = draft, set = S.settings;
+  const rate = feeRateOf(d);
+  const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? "selected" : ""}>${esc(l)}</option>`;
+  const cats = [...new Set(S.items.map(i => i.cat).filter(Boolean).map(String))];
+  const sh = document.getElementById("sheet");
+  sh.innerHTML = `
+  <div class="sh"><button class="btn sm" data-act="edClose">✕</button><b>${isNew ? "新規登録" : "編集"}</b></div>
+  <div class="body" id="edForm">
+    <div class="card"><div class="sec">1. 入力種別</div>
+      <div class="f"><select name="kind">${Object.entries(KINDS).map(([k, l]) => opt(k, l, d.kind || "sale")).join("")}</select></div></div>
+    <div class="card"><div class="sec">2. 商品マスタ紐付け</div>
+      <div class="f"><select name="masterId">${opt("", "未選択", d.masterId || "")}${S.items.filter(i => i.id !== d.id).map(i => opt(i.id, (i.name || "（名称未設定）") + "［" + (ST_LABEL[i.st] || i.st || "") + "］", d.masterId || "")).join("")}</select></div></div>
+    <div class="card"><div class="sec">3. 商品画像</div>
+      <div class="thumbbox"><div class="th" id="edThumb">NO IMAGE</div>
+        <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-act="thumbAdd">画像を追加</button><button class="btn sm" data-act="thumbDel">解除</button></div></div></div>
+    <div class="card"><div class="sec">4. 商品とステータス</div>
+      <div class="f"><label>商品名</label><input name="name" value="${esc(d.name)}"></div>
+      <div class="f2"><div class="f"><label>種類（カテゴリ）</label><input name="cat" list="catList" value="${esc(d.cat)}"><datalist id="catList">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div>
+      <div class="f"><label>ステータス</label><select name="st">${ST_ORDER.map(k => opt(k, ST_LABEL[k], d.st)).join("")}${d.st && !ST_LABEL[d.st] ? opt(d.st, d.st, d.st) : ""}</select></div></div></div>
+    <div class="card"><div class="sec">5. 状態チップ</div>
+      <div class="chips" id="condChips">${COND_CHIPS.map(c => `<button type="button" class="chip ${d.condChips.includes(c) ? "on" : ""}" data-act="cchip" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
+    <div class="card"><div class="sec">6. 書誌</div>
+      <div class="f"><label>ISBN</label><input name="code" inputmode="numeric" value="${esc(d.code)}"></div>
+      <div class="f2"><div class="f"><label>収録巻</label><input name="vols" value="${esc(d.vols)}"></div><div class="f"><label>出版社</label><input name="pub" value="${esc(d.pub)}"></div></div>
+      <div class="f"><label>著者</label><input name="author" value="${esc(d.author)}"></div></div>
+    <div class="card"><div class="sec">7. 日程</div>
+      <div class="f2"><div class="f"><label>仕入日</label><input type="date" name="date" value="${esc(normDate(d.date))}"></div><div class="f"><label>出品日</label><input type="date" name="listDate" value="${esc(normDate(d.listDate))}"></div>
+      <div class="f"><label>発送日</label><input type="date" name="shipDate" value="${esc(normDate(d.shipDate))}"></div><div class="f"><label>取引完了日（売却日）</label><input type="date" name="soldDate" value="${esc(normDate(d.soldDate))}"></div></div></div>
+    <div class="card"><div class="sec">8. 価格</div>
+      <div class="f2"><div class="f"><label>販売価格</label><input name="soldPrice" inputmode="numeric" value="${esc(d.soldPrice)}"></div><div class="f"><label>仕入額</label><input name="cost" inputmode="numeric" value="${esc(d.cost)}"></div>
+      <div class="f"><label>送料</label><input name="ship" inputmode="numeric" value="${esc(d.ship)}"></div><div class="f"><label>梱包資材費</label><input name="pack" inputmode="numeric" value="${esc(d.pack)}"></div>
+      <div class="f"><label>手数料率（%）</label><input name="feeRate" inputmode="decimal" value="${esc(rate)}"></div><div class="f"><label>手数料（自動）</label><input id="edFee" readonly tabindex="-1"></div>
+      <div class="f"><label>その他経費</label><input name="other" inputmode="numeric" value="${esc(d.other ?? "")}"></div><div class="f"><label>出品価格</label><input name="listPrice" inputmode="numeric" value="${esc(d.listPrice)}"></div></div>
+      <div class="bigp"><div class="muted">純利益</div><div class="v" id="edProfit">¥0</div><div class="muted" id="edMargin">利益率 —</div></div></div>
+    <div class="card"><div class="sec">9. プラットフォーム</div>
+      <div class="f"><select name="soldCh">${CH_KEYS.map(k => opt(k, set.ch[k].name, d.soldCh)).join("")}${d.soldCh && !CH_KEYS.includes(d.soldCh) ? opt(d.soldCh, d.soldCh, d.soldCh) : ""}${opt("", "未設定", d.soldCh || "")}</select></div></div>
+    <div class="card"><div class="sec">10. 購入者名</div>
+      <div class="f"><input name="buyer" autocomplete="off" value="${esc(d.buyer)}"></div>
+      <div class="muted">購入者名はこの端末内（IndexedDB）とバックアップファイルにだけ保存されます。</div></div>
+    <div class="card"><div class="sec">11. 発送方法</div>
+      <div class="f"><select name="shipMethod">${SHIP_METHODS.map(m => opt(m, m, d.shipMethod)).join("")}${d.shipMethod && !SHIP_METHODS.includes(d.shipMethod) ? opt(d.shipMethod, d.shipMethod, d.shipMethod) : ""}</select></div></div>
+    <div class="card"><div class="sec">12. メモ</div>
+      <div class="f"><textarea name="memo" rows="3">${esc(d.memo)}</textarea></div></div>
+  </div>
+  <div class="foot"><button class="btn dan" data-act="edDelete" ${isNew ? "disabled" : ""}>削除する</button><button class="btn pri" data-act="edSave">保存する</button></div>`;
+  sh.hidden = false; sh.scrollTop = 0;
+  document.body.style.overflow = "hidden";
+  edRecalc(); edShowThumb();
+}
+function edVal(name){ const el = document.querySelector(`#edForm [name="${name}"]`); return el ? el.value : ""; }
+function edRecalc(){
+  const tmp = {soldPrice:edVal("soldPrice"), cost:edVal("cost"), ship:edVal("ship"), pack:edVal("pack"), other:edVal("other"), feeRate:edVal("feeRate"), soldCh:edVal("soldCh")};
+  const c = calc(tmp);
+  document.getElementById("edFee").value = yen(c.fee);
+  const p = document.getElementById("edProfit");
+  p.textContent = yen(c.profit); p.className = "v " + (c.profit < 0 ? "neg" : "");
+  document.getElementById("edMargin").textContent = "利益率 " + pct(c.margin);
+}
+async function edShowThumb(){
+  const box = document.getElementById("edThumb"); if (!box) return;
+  const u = ED.thumbNew || (ED.thumbRemoved ? "" : await thumbURL(ED.draft.thumb));
+  box.textContent = "";
+  if (u){ const im = document.createElement("img"); im.alt = ""; im.src = u; im.style.cssText = "width:100%;height:100%;object-fit:cover"; box.appendChild(im); }
+  else box.textContent = "NO IMAGE";
+}
+async function edSave(){
+  const d = ED.draft;
+  for (const el of document.querySelectorAll("#edForm [name]")) d[el.name] = el.value;
+  for (const k of ["soldPrice","cost","ship","pack","other","listPrice"]) if (d[k] !== "") d[k] = num(d[k]);
+  d.feeRate = d.feeRate === "" ? "" : num(d.feeRate);
+  { const c = S.settings.ch[d.soldCh]; if (c && d.feeRate === num(c.fee)) d.feeRate = ""; } // 販路と同じ率なら個別指定しない（設定変更に追随）
+  d.soldFee = calc(d).fee;
+  d.condChips = [...document.querySelectorAll("#condChips .chip.on")].map(b => b.dataset.c);
+  if (ED.thumbRemoved && d.thumb){ await idbDel("imgs", d.thumb); thumbCache.delete(d.thumb); d.thumb = ""; }
+  if (ED.thumbNew){
+    if (d.thumb){ await idbDel("imgs", d.thumb); thumbCache.delete(d.thumb); }
+    const tid = "t_" + d.id + "_" + Date.now().toString(36);
+    await idbPut("imgs", tid, ED.thumbNew); d.thumb = tid; thumbCache.set(tid, ED.thumbNew);
+  }
+  const i = S.items.findIndex(x => x.id === d.id);
+  if (i >= 0) S.items[i] = d; else S.items.push(d);
+  await saveState();
+  closeEditor(); render(); toast("保存しました");
+}
+function closeEditor(){ const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; document.body.style.overflow = ""; ED = null; }
+function edDelete(){
+  const name = ED.draft.name || "（名称未設定）";
+  showModal(`<h3>削除の確認</h3><p>「${esc(name)}」を削除します。元に戻せません。</p>
+    <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn dan" data-act="edDeleteGo">削除する</button></div>`);
+}
+async function edDeleteGo(){
+  const id = ED.id, it = S.items.find(x => x.id === id);
+  if (it && it.thumb){ await idbDel("imgs", it.thumb); thumbCache.delete(it.thumb); }
+  S.items = S.items.filter(x => x.id !== id);
+  await saveState();
+  closeModal(); closeEditor(); render(); toast("削除しました");
+}
+
+/* 4-5 設定 */
+function renderSettings(){
+  const s = S.settings;
+  $view.innerHTML = `
+  <div class="card" id="setForm"><h2>販路プリセット</h2>
+    ${CH_KEYS.map(k => `<div class="chset"><div class="f"><label>名称（${k}）</label><input data-ch="${k}" data-f="name" value="${esc(s.ch[k].name)}"></div>
+      <div class="f"><label>手数料率%</label><input data-ch="${k}" data-f="fee" inputmode="decimal" value="${esc(s.ch[k].fee)}"></div>
+      <div class="f"><label>送料</label><input data-ch="${k}" data-f="ship" inputmode="numeric" value="${esc(s.ch[k].ship)}"></div></div>`).join("")}
+    <div class="muted" style="margin-bottom:10px">ヤフーフリマの手数料率はキャンペーンで変わるため、ここで変更してください。</div>
+    <div class="f2"><div class="f"><label>梱包費の初期値</label><input id="setPack" inputmode="numeric" value="${esc(s.pack)}"></div>
+    <div class="f"><label>目標利益率（%）</label><input id="setTarget" inputmode="decimal" value="${esc(s.target)}"></div></div>
+    <button class="btn pri" style="width:100%" data-act="setSave">設定を保存</button></div>
+  <div class="card"><h2>アプリ情報</h2><div>セラー <b id="appVer">v${APP_VER}</b></div><div class="muted">保存先: この端末のブラウザ内（IndexedDB）</div></div>`;
+}
+async function settingsSave(){
+  const s = S.settings;
+  for (const el of document.querySelectorAll("#setForm [data-ch]")){
+    const c = s.ch[el.dataset.ch], f = el.dataset.f;
+    c[f] = f === "name" ? (el.value.trim() || DEFAULT_SETTINGS.ch[el.dataset.ch].name) : num(el.value);
+  }
+  s.pack = num(document.getElementById("setPack").value);
+  s.target = num(document.getElementById("setTarget").value);
+  await saveState(); toast("設定を保存しました"); render();
+}
+
+/* 4-6 連携 */
+function renderLink(){
+  $view.innerHTML = `
+  <div class="card"><h2>バックアップ</h2>
+    <div class="muted" style="margin-bottom:8px">現在 ${S.items.length}件（${esc(stSummary(S.items)) || "なし"}）／書誌 ${Object.keys(S.biblio).length}件／定型文 ${S.templates.length}件</div>
+    <button class="btn pri" style="width:100%;margin-bottom:8px" data-act="export">バックアップを書き出す（SSS互換JSON）</button>
+    <button class="btn dan" style="width:100%" data-act="restore">バックアップから復元（全置換）</button>
+    <div class="muted" style="margin-top:6px">写真はバックアップに含まれません。探し物（hunt）は取り込みません。</div></div>
+  <div class="card wip"><h2>計算</h2><div>準備中（段階3）</div></div>
+  <div class="card wip"><h2>定型文</h2><div>準備中（段階3）。取り込み済み ${S.templates.length}件を保持しています。</div></div>`;
+}
+let RESTORE = null;
+async function restoreFromText(text){
+  let next;
+  try { next = parseBackup(JSON.parse(text)); }
+  catch (e) { showModal(`<h3>読み込めません</h3><p>${esc(e.message)}</p><div class="acts"><button class="btn" data-act="mclose">閉じる</button></div>`); return; }
+  RESTORE = next;
+  showModal(`<h3>復元の確認（1/2）</h3>
+    <p>次の内容で読み込みます。</p>
+    <ul style="padding-left:18px;margin:6px 0"><li>商品 <b id="rsN">${next.items.length}</b>件（${esc(stSummary(next.items))}）</li><li>書誌 ${Object.keys(next.biblio).length}件</li><li>定型文 ${next.templates.length}件</li></ul>
+    <div class="acts"><button class="btn" data-act="rsCancel">やめる</button><button class="btn pri" data-act="rsStep2">次へ</button></div>`);
+}
+function restoreStep2(){
+  showModal(`<h3>復元の確認（2/2）</h3>
+    <p><b class="neg">現在のデータ ${S.items.length}件はすべて置き換わります。</b>元に戻すには、事前に書き出したバックアップが必要です。</p>
+    <div class="acts"><button class="btn" data-act="rsCancel">やめる</button><button class="btn dan" data-act="rsGo">全置換を実行</button></div>`);
+}
+async function restoreGo(){
+  if (!RESTORE) return;
+  const next = RESTORE; RESTORE = null;
+  await applyRestore(next);
+  closeModal(); render(); toast("復元しました（" + S.items.length + "件）");
+}
+
+/* モーダル */
+function showModal(html){ const m = document.getElementById("modal"); m.innerHTML = `<div class="box">${html}</div>`; m.hidden = false; }
+function closeModal(){ stopScan(); const m = document.getElementById("modal"); m.hidden = true; m.innerHTML = ""; }
+
+/* ---------- イベント ---------- */
+document.addEventListener("click", async (e) => {
+  const tabBtn = e.target.closest("#tabs button");
+  if (tabBtn){ setTab(tabBtn.dataset.tab); return; }
+  if (e.target.id === "fab"){ openNew(); return; }
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const a = el.dataset.act;
+  switch (a){
+    case "mprev": UI.month = addMonth(UI.month, -1); render(); break;
+    case "mnext": UI.month = addMonth(UI.month, 1); render(); break;
+    case "tip": { const L = chartSVG.last, i = Number(el.dataset.i), s = L.series[i];
+      document.getElementById("chartTip").textContent = `${mLabel(L.months[i])}：売上 ${yen(s.sales)}／コスト ${yen(s.cost)}／純利益 ${yen(s.profit)}`; break; }
+    case "csv": download("seller_sales_" + today() + ".csv", buildCSV(salesRows()), "text/csv;charset=utf-8"); break;
+    case "complete": { e.stopPropagation(); const it = S.items.find(x => x.id === el.dataset.id);
+      if (it){ it.st = "sold"; if (!it.soldDate) it.soldDate = today(); await saveState(); render(); toast("取引完了にしました"); } break; }
+    case "edit": openEditor(el.dataset.id); break;
+    case "mf": UI.masterF = el.dataset.f; render(); break;
+    case "scan": startScan(); break;
+    case "isbnGo": isbnGo(); break;
+    case "manual": closeModal(); openEditor(null, {}); break;
+    case "mclose": closeModal(); break;
+    case "edClose": closeEditor(); break;
+    case "edSave": edSave(); break;
+    case "edDelete": if (!el.disabled) edDelete(); break;
+    case "edDeleteGo": edDeleteGo(); break;
+    case "cchip": el.classList.toggle("on"); break;
+    case "thumbAdd": document.getElementById("thumbFile").click(); break;
+    case "thumbDel": ED.thumbNew = null; ED.thumbRemoved = true; edShowThumb(); break;
+    case "setSave": settingsSave(); break;
+    case "export": { const j = buildExport(); download("seller_backup_" + today() + ".json", JSON.stringify(j, null, 1), "application/json"); toast("書き出しました（" + j.data.items.length + "件）"); break; }
+    case "restore": document.getElementById("restoreFile").click(); break;
+    case "rsCancel": RESTORE = null; closeModal(); break;
+    case "rsStep2": restoreStep2(); break;
+    case "rsGo": restoreGo(); break;
+  }
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "salesQ"){
+    UI.salesQ = e.target.value;
+    const pos = e.target.selectionStart; renderSales();
+    const n = document.getElementById("salesQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {}
+    return;
+  }
+  if (e.target.closest && e.target.closest("#edForm")){
+    if (e.target.name === "soldCh"){ const c = S.settings.ch[e.target.value]; if (c) document.querySelector('#edForm [name="feeRate"]').value = c.fee; }
+    edRecalc();
+  }
+});
+document.getElementById("restoreFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (f) restoreFromText(await f.text());
+});
+document.getElementById("thumbFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f || !ED) return;
+  try { ED.thumbNew = await resizeImage(f); ED.thumbRemoved = false; edShowThumb(); } catch (err) { toast(err.message); }
+});
+
+/* ---------- 起動 ---------- */
+const ready = (async () => {
+  try { await loadState(); } catch (e) { toast("保存領域を開けません: " + e.message); }
+  setTab("analysis");
+})();
+window.__seller = {get S(){ return S; }, ready, calc, monthAgg, parseBackup, buildExport, buildCSV, restoreFromText, setTab, openEditor, UI, APP_VER, lookupBiblio};
+</script>
+</body>
+</html>
