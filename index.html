@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <!-- v1.3.0 §3：背景ぼかしの被写体切り抜き（POST と同じ MediaPipe）を読み込むためだけに、固定バージョンのライブラリとモデルの置き場所に限って取得を許可する（データは送らない） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; worker-src blob: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://accounts.google.com/gsi/client; worker-src blob: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; style-src 'unsafe-inline' https://accounts.google.com/gsi/style; frame-src https://accounts.google.com/gsi/; img-src data: blob:; media-src blob: mediastream:; connect-src https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite https://accounts.google.com/gsi/ https://www.googleapis.com/drive/v3/ https://www.googleapis.com/upload/drive/v3/; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>セラー</title>
 <style>
@@ -308,7 +308,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.4.0";
+const APP_VER = "1.5.0";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -1675,7 +1675,216 @@ function linkHTML(){
     <div class="muted" style="margin-bottom:8px">現在 ${S.items.length}件（${esc(stSummary(S.items)) || "なし"}）／書誌 ${Object.keys(S.biblio).length}件／定型文 ${S.templates.length}件</div>
     <button class="btn pri" style="width:100%;margin-bottom:8px" data-act="export">バックアップを書き出す（SSS互換JSON）</button>
     <button class="btn dan" style="width:100%" data-act="restore">バックアップから復元（全置換）</button>
-    <div class="muted" style="margin-top:6px">写真はバックアップに含まれません。探し物（hunt）は取り込みません。</div></div>`;
+    <div class="muted" style="margin-top:6px">写真はバックアップに含まれません。探し物（hunt）は取り込みません。</div>
+    <div id="driveSec" style="margin-top:12px;padding-top:10px;border-top:1px solid #ddd">
+    <button class="btn pri" style="width:100%" id="driveSyncBtn" data-act="driveSync"${DRIVE.busy ? " disabled" : ""}>${esc(driveBtnText())}</button>
+    <div class="muted" id="driveStatus" style="margin-top:6px">${esc(driveStatusText())}</div>
+    <div class="muted" style="margin-top:4px">Googleドライブの「seller_data.json」と台帳データを双方向に同期します（写真は同期しません）。両方で同じ商品を変えていた場合は、この端末の内容を優先します。</div></div></div>`;
+}
+
+/* ---------- v1.5.0 Googleドライブ同期（GIS トークンフロー・drive.file のみ） ----------
+   - ログインは Google Identity Services の initTokenClient。アクセストークンはメモリ（DRIVE.token）だけに持ち、保存しない
+   - シークレットは使わない（ブラウザだけで完結するトークンフロー）
+   - 同期状態は IndexedDB meta の driveFileId／driveBaseline（前回同期成功時の data）／driveLastSyncAt
+   - 写真（imgs）には触らない */
+const GSI_SRC = "https://accounts.google.com/gsi/client";
+const GSI_CLIENT_ID = "238178207914-4ippnllcf4pj8n7thd35761pf5o8n1qe.apps.googleusercontent.com";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const DRIVE_FILE = "seller_data.json";
+const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
+const DRIVE_UP = "https://www.googleapis.com/upload/drive/v3/files";
+const DRIVE = {gsi:"idle", tc:null, token:null, exp:0, busy:false, last:null, msg:""};
+/* 内容比較用：キー順に依らない JSON 文字列 */
+function jcanon(v){
+  if (Array.isArray(v)) return "[" + v.map(x => x === undefined ? "null" : jcanon(x)).join(",") + "]";
+  if (v && typeof v === "object") return "{" + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ":" + jcanon(v[k])).join(",") + "}";
+  return v === undefined ? "null" : JSON.stringify(v);
+}
+/* マージ（純粋関数）。local/remote/baseline は書き出し形式の data（items 配列＋その他のキー）。
+   baseline が無いときは空として扱う。remote が無い（初回）ときは local そのまま。
+   戻り値 {data, conflicts（items の両側変更）, docConflicts（items 以外の両側変更）, toLocal, toRemote（items の件数）} */
+function mergeDriveData(local, remote, baseline){
+  const clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+  const L = isPlainObj(local) ? local : {}, B = isPlainObj(baseline) ? baseline : {};
+  const byId = d => { const m = new Map(); for (const it of (isPlainObj(d) && Array.isArray(d.items) ? d.items : [])) if (isPlainObj(it) && it.id !== undefined && it.id !== null && it.id !== "") m.set(String(it.id), it); return m; };
+  if (!isPlainObj(remote)) { const data = clone(L); return {data, conflicts:0, docConflicts:0, toLocal:0, toRemote:byId(data).size}; }
+  const R = remote, lm = byId(L), rm = byId(R), bm = byId(B);
+  const eq = (a, b) => jcanon(a) === jcanon(b);
+  let conflicts = 0, docConflicts = 0;
+  const out = [];
+  const order = [...lm.keys(), ...[...rm.keys()].filter(k => !lm.has(k))];
+  for (const id of order){
+    const l = lm.get(id), r = rm.get(id), b = bm.get(id), inB = bm.has(id);
+    if (l && r){
+      if (eq(l, r)) { out.push(l); continue; }
+      const lc = !inB || !eq(l, b), rc = !inB || !eq(r, b);
+      if (lc && rc) { conflicts++; out.push(l); } else out.push(rc ? r : l);
+    } else if (l){
+      if (inB && eq(l, b)) continue;   // 相手側で削除・こちらは無変更 → 削除
+      out.push(l);
+    } else {
+      if (inB && eq(r, b)) continue;   // こちらで削除・相手側は無変更 → 削除
+      out.push(r);
+    }
+  }
+  const data = {};
+  const keys = new Set([...Object.keys(L), ...Object.keys(R)]); keys.delete("items");
+  for (const k of keys){
+    const l = L[k], r = R[k], b = B[k];
+    let v;
+    if (eq(l, r)) v = l;
+    else { const lc = !eq(l, b), rc = !eq(r, b); if (lc && rc) { docConflicts++; v = l; } else v = rc ? r : l; }
+    if (v !== undefined) data[k] = clone(v);
+  }
+  data.items = clone(out);
+  const mm = byId(data);
+  const diff = (a, b) => { let n = 0; for (const [k, v] of a) if (!b.has(k) || !eq(v, b.get(k))) n++; for (const k of b.keys()) if (!a.has(k)) n++; return n; };
+  return {data, conflicts, docConflicts, toLocal:diff(mm, lm), toRemote:diff(mm, rm)};
+}
+/* 端末に適用するときと同じ整形（設定の正規化など）を、送信前にも掛けて内容を揃える */
+function driveNorm(d){
+  const arr = v => Array.isArray(v) ? v : [], obj = v => isPlainObj(v) ? v : {};
+  return JSON.parse(JSON.stringify({schema:2, items:arr(d.items).filter(isPlainObj), queue:arr(d.queue), biblio:obj(d.biblio), settings:cleanSettings(d.settings), templates:arr(d.templates), expenses:arr(d.expenses), meta:obj(d.meta)}));
+}
+function driveDefaultData(){ const e = emptyState(); return driveNorm({items:e.items, queue:e.queue, biblio:e.biblio, settings:e.settings, templates:e.templates, expenses:e.expenses, meta:e.meta}); }
+function driveFmt(iso){ const d = new Date(iso); if (isNaN(d)) return ""; const p = n => String(n).padStart(2, "0"); return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()); }
+function driveBtnText(){ return DRIVE.gsi === "fail" ? "接続できませんでした" : DRIVE.busy ? "同期中…" : "Googleドライブと同期"; }
+function driveStatusText(){
+  if (DRIVE.msg) return DRIVE.msg;
+  const login = DRIVE.token && DRIVE.exp > Date.now() ? "ログイン中" : "未ログイン";
+  return login + "／最終同期 " + (DRIVE.last ? driveFmt(DRIVE.last) : "まだありません");
+}
+function drivePaint(){
+  const b = document.getElementById("driveSyncBtn"), s = document.getElementById("driveStatus");
+  if (b){ b.textContent = driveBtnText(); b.disabled = DRIVE.busy; }
+  if (s) s.textContent = driveStatusText();
+}
+function driveMsg(m){ DRIVE.msg = m; drivePaint(); }
+/* GIS スクリプトの読み込み（外部取得はこの公式ライブラリだけ）。失敗しても他の機能には影響しない */
+function gsiLoad(){
+  if (DRIVE.gsi === "loading" || DRIVE.gsi === "ok") return;
+  DRIVE.gsi = "loading";
+  const el = document.createElement("script");
+  el.src = GSI_SRC; el.async = true; el.id = "gsiScript";
+  el.onload = () => gsiInit();
+  el.onerror = () => { el.remove(); DRIVE.gsi = "fail"; driveMsg("Googleのログイン部品を読み込めませんでした。通信状況を確かめて、もう一度押してください。"); };
+  document.head.appendChild(el);
+}
+function gsiInit(){
+  try {
+    const o = window.google && window.google.accounts && window.google.accounts.oauth2;
+    if (!o || typeof o.initTokenClient !== "function") throw new Error("no oauth2");
+    DRIVE.tc = o.initTokenClient({client_id:GSI_CLIENT_ID, scope:DRIVE_SCOPE, callback:driveOnToken, error_callback:driveOnTokenErr});
+    DRIVE.gsi = "ok"; DRIVE.msg = DRIVE.retry ? "接続しました。もう一度押すとログイン画面が開きます。" : ""; DRIVE.retry = false; drivePaint();
+  } catch (e) { DRIVE.gsi = "fail"; driveMsg("Googleのログイン部品を初期化できませんでした。"); }
+}
+function driveOnToken(resp){
+  if (!resp || resp.error || !resp.access_token){ driveMsg(resp && resp.error === "access_denied" ? "ドライブへのアクセスが許可されませんでした。" : "ログインできませんでした。"); return; }
+  const o = window.google.accounts.oauth2;
+  if (typeof o.hasGrantedAllScopes === "function" && !o.hasGrantedAllScopes(resp, DRIVE_SCOPE)){ driveMsg("ドライブへのアクセスが許可されませんでした。"); return; }
+  DRIVE.token = resp.access_token; DRIVE.exp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+  driveSync();
+}
+function driveOnTokenErr(err){
+  const t = err && err.type;
+  driveMsg(t === "popup_closed" ? "ログインをキャンセルしました。" : t === "popup_failed_to_open" ? "ログイン画面を開けませんでした（ポップアップを許可してください）。" : "ログインできませんでした。");
+}
+/* ボタン。トークンの要求はクリック直後に同期的に行う（ポップアップがブロックされないように） */
+function driveClick(){
+  if (DRIVE.busy) return;
+  if (DRIVE.gsi === "fail" || DRIVE.gsi === "idle"){ DRIVE.gsi = "idle"; DRIVE.retry = true; driveMsg("接続しています…"); gsiLoad(); return; }
+  if (DRIVE.gsi !== "ok"){ driveMsg("接続の準備中です。少し待ってからもう一度押してください。"); return; }
+  if (DRIVE.token && DRIVE.exp - 60000 > Date.now()){ driveSync(); return; }
+  DRIVE.token = null; driveMsg("Googleのログイン画面を開いています…");
+  try { DRIVE.tc.requestAccessToken(); } catch (e) { driveMsg("ログイン画面を開けませんでした。"); }
+}
+class DriveErr extends Error { constructor(msg, status){ super(msg); this.status = status; } }
+async function driveFetch(url, opt){
+  let r;
+  try { r = await fetch(url, Object.assign({}, opt, {headers: Object.assign({Authorization: "Bearer " + DRIVE.token}, (opt && opt.headers) || {})})); }
+  catch (e) { throw new DriveErr("通信に失敗しました", 0); }
+  if (r.status === 401){ DRIVE.token = null; DRIVE.exp = 0; throw new DriveErr("ログインの有効期限が切れました。もう一度押してください", 401); }
+  if (!r.ok) throw new DriveErr("ドライブの応答エラー（" + r.status + "）", r.status);
+  return r;
+}
+async function driveFindFile(fileId){
+  if (fileId){
+    try {
+      const r = await driveFetch(DRIVE_API + "/" + encodeURIComponent(fileId) + "?fields=id,trashed");
+      const j = await r.json();
+      if (j && j.id && !j.trashed) return j.id;
+    } catch (e) { if (e.status !== 404) throw e; }
+  }
+  const q = "name = '" + DRIVE_FILE + "' and trashed = false and 'root' in parents";
+  const r = await driveFetch(DRIVE_API + "?spaces=drive&orderBy=modifiedTime%20desc&pageSize=10&fields=files(id)&q=" + encodeURIComponent(q));
+  const j = await r.json();
+  return j && Array.isArray(j.files) && j.files[0] && j.files[0].id ? j.files[0].id : null;
+}
+function driveBody(data){
+  const now = new Date().toISOString();
+  return JSON.stringify({app:"SSS", key:"seller_app", source:"seller", ver:APP_VER, schema:2, exportedAt:now, syncedBy:"seller-app", syncedAt:now, data});
+}
+async function driveCreate(data){
+  const bd = "seller" + Math.random().toString(36).slice(2);
+  const body = "--" + bd + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify({name:DRIVE_FILE, mimeType:"application/json"}) +
+    "\r\n--" + bd + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + driveBody(data) + "\r\n--" + bd + "--";
+  const r = await driveFetch(DRIVE_UP + "?uploadType=multipart&fields=id", {method:"POST", headers:{"Content-Type":"multipart/related; boundary=" + bd}, body});
+  const j = await r.json();
+  if (!j || !j.id) throw new DriveErr("ドライブにファイルを作成できませんでした", 0);
+  return j.id;
+}
+async function driveUpdate(id, data){
+  await driveFetch(DRIVE_UP + "/" + encodeURIComponent(id) + "?uploadType=media&fields=id", {method:"PATCH", headers:{"Content-Type":"application/json; charset=UTF-8"}, body:driveBody(data)});
+}
+/* 同期本体。失敗したときは端末データ・baseline とも変更しない */
+async function driveSync(){
+  if (DRIVE.busy) return null;
+  DRIVE.busy = true; DRIVE.msg = ""; driveMsg("同期中…");
+  const snap = jcanon(driveNorm(buildExport().data));
+  try {
+    const local = driveNorm(buildExport().data);
+    const savedId = await idbGet("meta", "driveFileId");
+    const baseline = await idbGet("meta", "driveBaseline");
+    let id = await driveFindFile(savedId), remote = null, created = false;
+    if (id){
+      const r = await driveFetch(DRIVE_API + "/" + encodeURIComponent(id) + "?alt=media");
+      let root; try { root = JSON.parse(await r.text()); } catch (e) { throw new DriveErr("ドライブのファイルを読めませんでした", 0); }
+      if (!isPlainObj(root) || !isPlainObj(root.data) || !Array.isArray(root.data.items)) throw new DriveErr("ドライブのファイルの形式が違います", 0);
+      remote = driveNorm(root.data);
+    }
+    // 前回の同期記録が無い端末は「初期状態」を基準にする（新しい端末の空の設定で相手側を上書きしないため）
+    const m = mergeDriveData(local, remote, isPlainObj(baseline) ? baseline : driveDefaultData());
+    const merged = driveNorm(m.data), mc = jcanon(merged);
+    if (jcanon(driveNorm(buildExport().data)) !== snap) throw new DriveErr("同期中にデータが変更されました。もう一度押してください", 0);
+    if (!id){ id = await driveCreate(merged); created = true; }
+    else if (mc !== jcanon(remote)) await driveUpdate(id, merged);
+    if (mc !== snap){
+      if (jcanon(driveNorm(buildExport().data)) !== snap) throw new DriveErr("同期中にデータが変更されました。もう一度押してください", 0);
+      await driveApply(merged);
+    }
+    const at = new Date().toISOString();
+    await idbPut("meta", "driveFileId", id);
+    await idbPut("meta", "driveBaseline", merged);
+    await idbPut("meta", "driveLastSyncAt", at);
+    DRIVE.last = at;
+    const res = {created, toLocal:m.toLocal, toRemote:remote ? m.toRemote : merged.items.length, conflicts:m.conflicts, docConflicts:m.docConflicts};
+    const msg = (created ? "ドライブに同期用ファイルを作成しました。同期しました" : "同期しました") +
+      "（取り込み " + res.toLocal + "件・送信 " + res.toRemote + "件・競合 " + res.conflicts + "件" + (res.docConflicts ? "・設定等の競合 " + res.docConflicts + "件" : "") + "）";
+    DRIVE.busy = false; DRIVE.msg = "";
+    if (mc !== snap) render();
+    driveMsg(msg + "／最終同期 " + driveFmt(at)); toast(created ? "ドライブに同期用ファイルを作成しました" : "同期しました");
+    return res;
+  } catch (e) {
+    DRIVE.busy = false;
+    driveMsg("同期できませんでした：" + (e instanceof DriveErr ? e.message : "処理中にエラーが発生しました"));
+    return null;
+  }
+}
+/* 端末への適用：台帳データ（items・定型文・設定など）だけ置き換える。写真 imgs には触らない */
+async function driveApply(d){
+  const prev = S;
+  S = Object.assign({}, S, JSON.parse(JSON.stringify(d)));
+  try { await saveState(); } catch (e) { S = prev; throw new DriveErr("端末に保存できませんでした", 0); }
 }
 
 /* ---------- ツール（§1） ---------- */
@@ -1996,6 +2205,7 @@ document.addEventListener("click", async (e) => {
     case "setSave": settingsSave(); break;
     case "export": { const j = buildExport(); download("seller_backup_" + today() + ".json", JSON.stringify(j, null, 1), "application/json"); toast("書き出しました（" + j.data.items.length + "件）"); break; }
     case "restore": document.getElementById("restoreFile").click(); break;
+    case "driveSync": driveClick(); break;
     case "rsCancel": RESTORE = null; closeModal(); break;
     case "rsStep2": restoreStep2(); break;
     case "rsGo": restoreGo(); break;
@@ -2040,6 +2250,7 @@ document.getElementById("restoreFile").addEventListener("change", async (e) => {
 const ready = (async () => {
   try { await loadState(); } catch (e) { toast("保存領域を開けません: " + e.message); }
   try { await loadLocal(); } catch (e) {}
+  try { const v = await idbGet("meta", "driveLastSyncAt"); DRIVE.last = typeof v === "string" ? v : null; } catch (e) {}
   C = calcNew();
   setTab("analysis");
 })();
@@ -2049,7 +2260,10 @@ window.__seller = {get S(){ return S; }, ready, calc, monthAgg, parseBackup, bui
   // v1.3.0 確認用（写真・読み取り）
   PUI, phOf, phBadge, progress, reqKeys, canon, condText, bannerText, bannerDefault, bnToggle, renderEdit, blurBg, makeMask, withBanner, collage, exportFiles, photosReady, isBook, fetchBiblio, CHART_KEYS,
   get SEGOK(){ return SEGOK; }, loadSeg, onCode, startScan, stopScan, regOpen, regPendShow, shootHTML, PA, phPeek, guessFlags, regen, mkDup, finalize,
-  __setSeg(seg){ SEGP = seg ? Promise.resolve(seg) : null; SEGOK = !!seg; }};
+  __setSeg(seg){ SEGP = seg ? Promise.resolve(seg) : null; SEGOK = !!seg; },
+  // v1.5.0 確認用（ドライブ同期）
+  mergeDriveData, jcanon, driveNorm, driveSync, driveClick, gsiInit, DRIVE, GSI_CLIENT_ID, DRIVE_SCOPE};
+gsiLoad();   // v1.5.0 GIS の読み込み（失敗しても他の機能には影響しない）
 </script>
 </body>
 </html>
