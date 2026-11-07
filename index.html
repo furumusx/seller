@@ -325,7 +325,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.6.0";
+const APP_VER = "1.6.1";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -880,6 +880,16 @@ function estCalc(it){
   return Object.assign(calc({soldPrice: it.listPrice, cost: it.cost, ship: has(it.ship) ? it.ship : ch.ship, pack: has(it.pack) ? it.pack : S.settings.pack, other: it.other, feeRate: it.feeRate, soldCh: ck}), {ch: ck});
 }
 function renderSales(){
+  // v1.6.0 §2 セラーブック風：上部ピル（CSV出力／＋）→ 検索 → 「全ての商品 ◯個」→ 取引未完了 → 出品中 → 月別
+  $view.innerHTML = `
+  <div class="sbar" id="salesBar"><button class="pill red" data-act="csv">CSV出力</button><span class="grow"></span><button class="pill ic" data-act="salesNew" aria-label="新規登録">＋</button></div>
+  ${SEARCH_SVG("salesQ", UI.salesQ)}
+  <div id="salesRes">${salesResHTML()}</div>`;
+  fillThumbs($view);
+}
+// v1.6.1 検索入力時は結果領域（#salesRes）だけを描き直す。検索 input は作り直さない（IME 変換を壊さないため）
+function renderSalesRes(){ const box = document.getElementById("salesRes"); if (!box) return renderSales(); box.innerHTML = salesResHTML(); fillThumbs(box); }
+function salesResHTML(){
   const rows = salesRows();
   const deal = rows.filter(r => r.st === "deal");
   const listed = rows.filter(r => r.st === "listed").sort((a, b) => normDate(b.listDate).localeCompare(normDate(a.listDate)));
@@ -890,13 +900,8 @@ function renderSales(){
   const byM = new Map();
   for (const it of sold){ const k = monthKey(it.soldDate) || "日付なし"; if (!byM.has(k)) byM.set(k, []); byM.get(k).push(it); }
   for (const [k, list] of byM) groups.push([k === "日付なし" ? "売却済み｜日付なし" : mLabel(k), list, k]);
-  // v1.6.0 §2 セラーブック風：上部ピル（CSV出力／＋）→ 検索 → 「全ての商品 ◯個」→ 取引未完了 → 出品中 → 月別
-  $view.innerHTML = `
-  <div class="sbar" id="salesBar"><button class="pill red" data-act="csv">CSV出力</button><span class="grow"></span><button class="pill ic" data-act="salesNew" aria-label="新規登録">＋</button></div>
-  ${SEARCH_SVG("salesQ", UI.salesQ)}
-  <div class="allhd" id="salesAll">全ての商品 ${rows.length}個<small>CSV は売却済み・取引中のみ</small></div>
+  return `<div class="allhd" id="salesAll">全ての商品 ${rows.length}個<small>CSV は売却済み・取引中のみ</small></div>
   <div id="salesList">${groups.length ? groups.map(([lab, list, k]) => `<div class="grp" data-grp="${esc(k)}">${esc(lab)}（${list.length}件）</div>` + list.map(it => it.st === "listed" ? listedRow(it) : saleRow(it)).join("")).join("") : `<div class="empty-note">該当する売上がありません</div>`}</div>`;
-  fillThumbs($view);
 }
 // v1.6.0 検索バー（売上管理表・在庫で共通。入力欄の id と値だけが違う）
 function SEARCH_SVG(id, v){ return `<div class="sq"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input class="search" id="${id}" type="search" placeholder="商品名で探す" autocomplete="off" value="${esc(v)}"></div>`; }
@@ -971,10 +976,7 @@ function gridPrice(it){
 }
 function bundleBadge(it, n){ return n ? `<span class="bd">${it.mixed ? "まとめ" : "セット"} ${n}点</span>` : ""; }
 function renderMaster(){
-  const rows = masterRows();
-  const cnt = {}; for (const m of memberSet()) cnt[String(m.inSet)] = (cnt[String(m.inSet)] || 0) + 1;
   const sel = UI.selMode, nSel = Object.keys(UI.sel).length;
-  const costSum = rows.reduce((s, it) => s + num(it.cost), 0);
   document.getElementById("fab").hidden = sel;
   $view.innerHTML = `
   ${sel ? `<div class="card" style="margin-bottom:10px"><b>束ねる商品を選ぶ</b><div class="muted">仕入れ済みの商品を2件以上タップして選び、下の「束ねる」を押します。同じ作品ならセット、違う作品が混ざればまとめ売りになります。</div></div>`
@@ -983,13 +985,21 @@ function renderMaster(){
     <button class="btn wide" data-act="selOn" style="margin-bottom:10px">束ねる（複数選択）</button>`}
   ${SEARCH_SVG("masterQ", UI.masterQ)}
   <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}</div>
-  <div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
+  <div id="masterRes">${masterResHTML()}</div>
+  ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
+  fillThumbs($view);
+}
+// v1.6.1 検索入力時は結果領域（#masterRes：件数・仕入額合計〜グリッド〜該当なし）だけを描き直す。検索 input は作り直さない
+function renderMasterRes(){ const box = document.getElementById("masterRes"); if (!box) return renderMaster(); box.innerHTML = masterResHTML(); fillThumbs(box); }
+function masterResHTML(){
+  const rows = masterRows(), sel = UI.selMode;
+  const cnt = {}; for (const m of memberSet()) cnt[String(m.inSet)] = (cnt[String(m.inSet)] || 0) + 1;
+  const costSum = rows.reduce((s, it) => s + num(it.cost), 0);
+  return `<div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
   <div class="grid" id="masterGrid">${rows.map(it => {
     const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock";
     return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div>${it.st === "sold" ? "" : `<div class="pp" data-pp>${esc(phBadge(it))}</div>`}</div></button>`; }).join("")}</div>
-  ${rows.length ? "" : `<div class="empty-note">${String(UI.masterQ || "").trim() ? "検索に一致する商品がありません" : "該当する商品がありません"}</div>`}
-  ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
-  fillThumbs($view);
+  ${rows.length ? "" : `<div class="empty-note">${String(UI.masterQ || "").trim() ? "検索に一致する商品がありません" : "該当する商品がありません"}</div>`}`;
 }
 
 /* ---------- §4 束ねる（SSS の listBundleMake / listBundleDoAct / unbundleItem と同じデータ表現） ---------- */
@@ -2243,9 +2253,9 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("input", (e) => {
   if (e.target.closest && e.target.closest(".pst")){ memoInput(e.target); return; }
   if (e.target.id === "salesQ" || e.target.id === "masterQ"){
+    // v1.6.1 結果領域だけを部分描画する。検索 input（value・フォーカス・IME 変換）には触らない
     const id = e.target.id; UI[id] = e.target.value;
-    const pos = e.target.selectionStart; (id === "salesQ" ? renderSales : renderMaster)();
-    const n = document.getElementById(id); n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {}
+    (id === "salesQ" ? renderSalesRes : renderMasterRes)();
     return;
   }
   if (e.target.closest && e.target.closest("#edForm")){
