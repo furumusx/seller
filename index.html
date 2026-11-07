@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>セラー</title>
@@ -14,6 +14,11 @@
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
+/* v1.2.0 §1 iOS Safari の自動ズーム対策：入力欄は16px以上（16px未満だとフォーカス時に拡大される）。ダブルタップ拡大も抑止 */
+input,select,textarea{font-size:16px!important}
+html{touch-action:manipulation;scroll-padding-bottom:calc(var(--tabh) + 24px + env(safe-area-inset-bottom))}
+a,button,input,select,textarea,label,summary,[data-act]{touch-action:manipulation}
+input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-height:42px;min-width:0;max-width:100%}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:disabled{opacity:.35;cursor:default}
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
@@ -81,7 +86,7 @@ button.stbtn{min-height:26px}
 .cell .pr{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .cell .cn{font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fab{position:fixed;right:16px;bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom));z-index:7;width:56px;height:56px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:30px;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,.25)}
-#sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-padding-top:70px;scroll-padding-bottom:90px}
 #sheet .sh{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:6px 12px 6px 6px;padding-top:calc(6px + env(safe-area-inset-top));display:flex;align-items:center;gap:6px}
 #sheet .sh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
 /* §5 閉じるボタン：タップ領域 48px・字 28px */
@@ -108,7 +113,7 @@ button.stbtn{min-height:26px}
 #modal .box h3{margin:0 0 8px;font-size:16px}
 #modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
 #modal video{width:100%;border-radius:8px;background:#000;display:block}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 84px);z-index:50;background:#111;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;max-width:90vw}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 84px);z-index:50;background:#111;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;width:max-content;max-width:90vw;pointer-events:none}
 .chset{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:end;margin-bottom:8px}
 .chset .f{margin:0}
 .empty-note{text-align:center;color:var(--mute);padding:30px 0}
@@ -145,6 +150,34 @@ details.fold>summary::-webkit-details-marker{display:none}
 details.fold>summary::after{content:"＋";color:var(--sub);flex:none}
 details.fold[open]>summary::after{content:"－"}
 details.fold>.in{padding:0 12px 12px}
+/* v1.2.0 §2 在庫タブ */
+.invtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:10px}
+.invsum{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:13px;color:var(--sub);margin-bottom:6px;font-variant-numeric:tabular-nums}
+.invsum b{color:var(--ink)}
+.cell{position:relative}
+.cell .bd{position:absolute;left:4px;top:4px;background:var(--ink);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;max-width:calc(100% - 8px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell .ck{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);box-shadow:0 0 0 1px var(--ink)}
+.cell.sel{outline:3px solid var(--ink);outline-offset:-3px}
+.cell.sel .ck{background:var(--ink)}
+.cell.sel .ck::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.cell.off{opacity:.35}
+.selbar{position:fixed;left:0;right:0;bottom:calc(var(--tabh) + env(safe-area-inset-bottom));z-index:8;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:8px 12px;background:var(--card);border-top:1px solid var(--ink)}
+.selbar span{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlist{border-top:1px solid var(--line)}
+.mlist div{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;min-width:0}
+.mlist div span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlist div span:last-child{flex:none;font-variant-numeric:tabular-nums}
+/* v1.2.0 §3 読み取りで登録 */
+.scanbox{position:relative;border-radius:8px;overflow:hidden;background:#000;margin-top:8px}
+.scanbox video{width:100%;display:block;max-height:46vh;object-fit:cover}
+.scanbox .guide{position:absolute;left:8%;right:8%;top:50%;height:0;border-top:2px solid #fff;box-shadow:0 0 0 1px #000}
+.scanbox.hit{outline:4px solid #fff;outline-offset:-4px}
+.scanbox .hint{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;text-align:center}
+.pend{border:1px solid var(--ink);border-radius:10px;padding:10px;margin-top:10px;background:#fff}
+.reglog{font-size:13px;color:var(--sub);word-break:break-word}
+.reglog div{padding:4px 0;border-bottom:1px solid var(--line)}
+.inrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:8px}
+.inrow input{width:100%;min-width:0;border:1px solid var(--line2);border-radius:8px;padding:9px 10px;background:#fff}
 </style>
 </head>
 <body>
@@ -153,7 +186,7 @@ details.fold>.in{padding:0 12px 12px}
 <nav id="tabs">
   <button data-tab="analysis"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7.5 15l4-4.5 3 3 5-6"/></svg>分析</button>
   <button data-tab="sales"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>売上管理表</button>
-  <button data-tab="master"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>商品マスタ</button>
+  <button data-tab="master"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>在庫</button>
   <button data-tab="tools"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5h6v2.5M3.5 12.5h17"/></svg>ツール</button>
   <button data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>設定</button>
 </nav>
@@ -165,7 +198,7 @@ details.fold>.in{padding:0 12px 12px}
 <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
 <script>
 "use strict";
-const APP_VER = "1.1.0";
+const APP_VER = "1.2.0";
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
 const ST_ORDER = ["stock","listed","deal","sold","cand"];
@@ -284,9 +317,24 @@ function calc(it, set){
   const margin = price ? Math.round(profit / price * 1000) / 10 : null;
   return {price, rate, fee, cost, ship, pack, other, profit, margin, costTotal: cost + ship + pack + fee + other};
 }
+/* v1.2.0 §4 束ね（SSS と同じ表現）：メンバー単巻は inSet＝親の id。親は setk:"セット"・autoBundle:1（まとめ売りは mixed:1）。
+   メンバーは一覧から隠し、集計からも外す（親の金額だけを数える）。親が存在しない inSet（孤児）は隠さない */
+function memberSet(){
+  const ids = new Set(S.items.map(i => String(i.id))), out = new Set();
+  for (const it of S.items) if (it.inSet !== undefined && it.inSet !== null && it.inSet !== "" && String(it.inSet) !== String(it.id) && ids.has(String(it.inSet))) out.add(it);
+  return out;
+}
+function membersOf(id){ return S.items.filter(m => m.inSet !== undefined && m.inSet !== null && String(m.inSet) === String(id) && String(m.id) !== String(id)); }
+// 在庫（SSS の集計と同じ：仕入れ済み・出品中・取引中で、束ねられたメンバーを除く）
+function invAgg(){
+  const mem = memberSet(); const a = {n:0, cost:0, by:{stock:0, listed:0, deal:0}};
+  for (const it of S.items) if ((it.st === "stock" || it.st === "listed" || it.st === "deal") && !mem.has(it)){ a.n++; a.cost += num(it.cost); a.by[it.st]++; }
+  return a;
+}
 function monthAgg(mk){
   const a = {sales:0, cost:0, profit:0, n:0};
-  for (const it of S.items) if (it.st === "sold" && monthKey(it.soldDate) === mk){
+  const mem = memberSet();
+  for (const it of S.items) if (it.st === "sold" && monthKey(it.soldDate) === mk && !mem.has(it)){
     const c = calc(it); a.sales += c.price; a.cost += c.costTotal; a.profit += c.profit; a.n++;
   }
   a.margin = a.sales ? Math.round(a.profit / a.sales * 1000) / 10 : null;
@@ -426,18 +474,20 @@ async function fileToPhoto(file, lvl){ const im = await loadImg(file); return fi
 function frameToPhoto(video, lvl){ return finishPhoto(fitCanvas(video, video.videoWidth, video.videoHeight, PHOTO_MAX), lvl); }
 
 /* ---------- 画面 ---------- */
-const UI = {tab:"analysis", month:null, salesQ:"", masterF:"all", tool:"tpl", tq:"", tcat:"all", revOpen:false, setOpen:false};
+const UI = {tab:"analysis", month:null, salesQ:"", masterF:"stock", tool:"tpl", tq:"", tcat:"all", revOpen:false, setOpen:false, selMode:false, sel:{}};
 const $view = document.getElementById("view");
 function setTab(t){
   if (t === "link") t = "settings";   // v1.0.0 の連携タブは設定タブへ統合
+  if (t === "stock" || t === "inv") t = "master";   // v1.2.0 在庫タブ（内部名は master のまま）
   if (!["analysis","sales","master","tools","settings"].includes(t)) t = "analysis";
+  if (t !== "master"){ UI.selMode = false; UI.sel = {}; }
   UI.tab = t;
   for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === t);
   document.getElementById("fab").hidden = t !== "master";
   render();
 }
 function render(){
-  const titles = {analysis:"分析", sales:"売上管理表", master:"商品マスタ", tools:"ツール", settings:"設定"};
+  const titles = {analysis:"分析", sales:"売上管理表", master:"在庫", tools:"ツール", settings:"設定"};
   document.getElementById("title").textContent = "セラー｜" + titles[UI.tab];
   ({analysis:renderAnalysis, sales:renderSales, master:renderMaster, tools:renderTools, settings:renderSettings})[UI.tab]();
   window.scrollTo && window.scrollTo(0, 0);
@@ -466,7 +516,13 @@ function renderAnalysis(){
     <div class="legend">${CHART_KEYS.map(([k, col, w, dash, lab]) => `<span><svg viewBox="0 0 22 8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="${col}" stroke-width="${w}" stroke-dasharray="${dash}"/></svg>${lab}</span>`).join("")}</div>
     ${chartSVG(months, series)}
     <div id="chartTip">グラフをタップすると月の値を表示します</div>
-  </div>`;
+  </div>
+  ${(() => { const v = invAgg(); return `<div class="card" id="invCard"><h2>在庫（現在）</h2>
+    <table class="sum" id="invTable">
+      <tr><th>在庫件数</th><td data-k="invN">${v.n}件</td></tr>
+      <tr><th>在庫原価</th><td data-k="invCost">${yen(v.cost)}</td></tr>
+    </table>
+    <div class="muted" style="margin-top:6px">仕入れ済み ${v.by.stock}／出品中 ${v.by.listed}／取引中 ${v.by.deal}。束ねた単巻はセット・まとめ売りの1件として数えます。</div></div>`; })()}`;
 }
 // モノクロ：色ではなく線の濃さ・太さ・破線で見分ける [キー, 色, 太さ, 破線, 名前]
 const CHART_KEYS = [["sales","#111",2,"","売上"],["cost","#9a9a9a",2,"5 3","コスト"],["profit","#111",3.2,"1.5 3","純利益"]];
@@ -503,8 +559,8 @@ function shortYen(v){ return Math.abs(v) >= 10000 ? (v / 10000).toFixed(Math.abs
 
 /* 4-2 売上管理表 */
 function salesRows(){
-  const q = UI.salesQ.trim().toLowerCase();
-  return S.items.filter(it => (it.st === "sold" || it.st === "deal" || it.st === "listed") && (!q || String(it.name ?? "").toLowerCase().includes(q)));
+  const q = UI.salesQ.trim().toLowerCase(), mem = memberSet();
+  return S.items.filter(it => (it.st === "sold" || it.st === "deal" || it.st === "listed") && !mem.has(it) && (!q || String(it.name ?? "").toLowerCase().includes(q)));
 }
 // CSV は v1.0.0 と同じ対象（売却済み＋取引中）。出品中は含めない
 function csvRows(){ return salesRows().filter(it => it.st === "sold" || it.st === "deal"); }
@@ -584,24 +640,277 @@ function download(name, text, type){
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
-/* 4-3 商品マスタ */
-const MASTER_F = [["all","全て"],["stock","仕入れ済み"],["listed","出品中"],["deal","取引中"],["sold","売却済み"]];
-// §6 商品マスタは 仕入れ済み〜売却済み だけ（候補 cand と、st が未知の値のものは出さない）
+/* 4-3 在庫（v1.2.0 で旧・商品マスタを改称。仕入れ済みを既定の主役にする） */
+const MASTER_F = [["stock","仕入れ済み"],["listed","出品中"],["deal","取引中"],["sold","売却済み"],["all","すべて"]];
+// 在庫タブは 仕入れ済み〜売却済み だけ（候補 cand と、st が未知の値のものは出さない）。束ねられたメンバーは親の中に入るので出さない
 const MASTER_ST = ["stock","listed","deal","sold"];
-function masterRows(){ return S.items.filter(it => MASTER_ST.includes(it.st) && (UI.masterF === "all" || it.st === UI.masterF)); }
+function masterRows(){ const mem = memberSet(); return S.items.filter(it => MASTER_ST.includes(it.st) && !mem.has(it) && (UI.masterF === "all" || it.st === UI.masterF)); }
 function gridPrice(it){
   if ((it.st === "sold" || it.st === "deal") && num(it.soldPrice)) return num(it.soldPrice);
   if (num(it.listPrice)) return num(it.listPrice);
   return num(it.cost);
 }
+function bundleBadge(it, n){ return n ? `<span class="bd">${it.mixed ? "まとめ" : "セット"} ${n}点</span>` : ""; }
 function renderMaster(){
   const rows = masterRows();
+  const cnt = {}; for (const m of memberSet()) cnt[String(m.inSet)] = (cnt[String(m.inSet)] || 0) + 1;
+  const sel = UI.selMode, nSel = Object.keys(UI.sel).length;
+  const costSum = rows.reduce((s, it) => s + num(it.cost), 0);
+  document.getElementById("fab").hidden = sel;
   $view.innerHTML = `
-  <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}">${l}</button>`).join("")}</div>
-  <div class="muted" style="margin-bottom:6px" id="masterCount">${rows.length}件</div>
-  <div class="grid" id="masterGrid">${rows.map(it => `<button class="cell" data-act="edit" data-id="${esc(it.id)}" data-st="${esc(it.st)}">${thumbHTML(it.thumb)}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div></div></button>`).join("")}</div>
-  ${rows.length ? "" : `<div class="empty-note">該当する商品がありません</div>`}`;
+  ${sel ? `<div class="card" style="margin-bottom:10px"><b>束ねる商品を選ぶ</b><div class="muted">仕入れ済みの商品を2件以上タップして選び、下の「束ねる」を押します。同じ作品ならセット、違う作品が混ざればまとめ売りになります。</div></div>`
+    : `<div class="invtop"><button class="btn pri" data-act="regOpen">読み取りで登録</button><button class="btn" data-act="selOn">束ねる（複数選択）</button></div>`}
+  <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}</div>
+  <div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
+  <div class="grid" id="masterGrid">${rows.map(it => {
+    const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock";
+    return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div></div></button>`; }).join("")}</div>
+  ${rows.length ? "" : `<div class="empty-note">該当する商品がありません</div>`}
+  ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
   fillThumbs($view);
+}
+
+/* ---------- §4 束ねる（SSS の listBundleMake / listBundleDoAct / unbundleItem と同じデータ表現） ---------- */
+// SSS workKey（作品名の正規化）をそのまま移植
+function workKey(s){
+  if (!s) return ""; let t = String(s).normalize("NFKC").toLowerCase();
+  t = t.replace(/[【\[(（「『〈<][^】\])）」』〉>]*[】\])）」』〉>―—]/g, " ");
+  t = t.replace(/全\s*\d+\s*巻|\d+\s*[-~〜～]\s*\d+\s*巻?|第?\s*\d+\s*巻|vol\.?\s*\d+/g, " ");
+  t = t.replace(/([\s―—])\d{1,3}(?=[\s―—]|$)/g, "$1");
+  t = t.replace(/全巻|完結|セット|初版|帯付き?|チラシ付き?|特典付き?|美品|中古|コミックス?|漫画|まとめ売り?|送料無料|即購入可/g, " ");
+  t = t.replace(/[\s・:：!！?？、。,.\-_~〜～\/／|｜+＋'"]+/g, "");
+  t = t.replace(/\d+$/, "");
+  return t;
+}
+const itemKey = it => workKey(it.work || it.name);
+function parseVols(s){ const set = new Set(); String(s || "").normalize("NFKC").split(/[,、\s]+/).forEach(p => {
+  const m = p.match(/^(\d+)(?:[-~〜](\d+))?$/); if (!m) return; const a = +m[1], b = m[2] ? +m[2] : a; if (Math.abs(b - a) > 500) return;
+  for (let i = Math.min(a, b); i <= Math.max(a, b); i++) set.add(i); }); return set; }
+function volOf(name){ const t = String(name || "").normalize("NFKC");
+  const m = t.match(/巻[ノの]\s*(\d{1,3})/) || t.match(/第?\s*(\d+)\s*巻/) || t.match(/vol\.?\s*(\d+)/i) || t.match(/\s(\d{1,3})\s*$/) || t.match(/[\s―—](\d{1,3})(?=[\s―—]|$)/); return m ? +m[1] : null; }
+function volRangeOfName(name){ const t = String(name || "").normalize("NFKC"); const m = t.match(/(\d+)\s*[-~〜～]\s*(\d+)\s*巻/); if (m) return [+m[1], +m[2]]; const v = volOf(name); return v ? [v, v] : null; }
+function itemRangeOf(it){ if (!it) return null; if (it.range){ const s = parseVols(it.range); if (s.size) return [Math.min(...s), Math.max(...s)]; } const r = volRangeOfName(it.name); if (r) return r; const vv = String(it.vols ?? "").normalize("NFKC").trim(); if (/^\d+$/.test(vv)) return [+vv, +vv]; return null; }
+function bundleRange(a, b){ return [Math.min(a[0], b[0]), Math.max(a[1], b[1])]; }
+// まとめ売りの商品名：メンバー名の最長共通接頭辞（末尾の空白・記号は除く）＋「まとめ売り」。接頭辞が2文字未満なら「先頭の名前 他まとめ売り」
+function mixedName(ms){ const ns = ms.map(m => String(m.name || "")); let pre = ns[0] || "";
+  for (const n of ns.slice(1)){ let i = 0; while (i < pre.length && i < n.length && pre[i] === n[i]) i++; pre = pre.slice(0, i); }
+  pre = pre.replace(/[\s・:：\/／\-―—(（　]+$/, "").trim();
+  return [...pre].length >= 2 ? `${pre} まとめ売り` : `${ns[0]} 他まとめ売り`; }
+function setName(ms, lo, hi){ const base = ((ms[0].work) || ms[0].name || "").replace(/第?\s*\d+\s*巻.*$/, "").trim(); return `${base} ${lo}〜${hi}巻 セット`; }
+function selItems(){ return Object.keys(UI.sel).map(id => S.items.find(x => String(x.id) === id)).filter(Boolean); }
+let BUN = null;
+function bundleMake(){
+  const ms = selItems();
+  if (ms.length < 2){ toast("2件以上選んでください"); return; }
+  if (ms.some(m => m.st !== "stock")){ toast("束ねられるのは仕入れ済みの商品だけです"); return; }
+  const key = itemKey(ms[0]), mixed = ms.some(m => itemKey(m) !== key);
+  const cost = ms.reduce((s, m) => s + (num(m.cost) || 0), 0);
+  BUN = {ids: ms.map(m => String(m.id)), mixed};
+  if (mixed){
+    const lp = ms.reduce((s, m) => s + (num(m.listPrice) || 0), 0);
+    showModal(`<h3>まとめ売りとして束ねる</h3><div class="muted" style="margin-bottom:8px">選んだ${ms.length}件には違う作品が含まれています。<b>まとめ売り</b>として1つの商品に束ねます。メンバーは在庫一覧では隠れ、まとめ売りの中に入ります。</div>
+      <div class="f"><label>商品名（あとから編集画面でも変えられます）</label><input id="bunName" value="${esc(mixedName(ms))}"></div>
+      <div class="muted" id="bunCost">仕入額の合計 ${yen(cost)}（未入力は0円）</div><div class="muted" id="bunLP">出品価格の合計 ${yen(lp)}（まとめ売りの出品価格に入れます）</div>
+      <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn pri" data-act="bundleDo">まとめ売りとして束ねる</button></div>`);
+    return;
+  }
+  let rg = null; for (const m of ms){ const r = itemRangeOf(m); if (r) rg = rg ? bundleRange(rg, r) : r; }
+  showModal(`<h3>セットとして束ねる</h3><div class="muted" style="margin-bottom:8px">選んだ${ms.length}件を1つのセット商品にまとめます。単巻はセット商品の中に入り、在庫一覧ではセット商品だけが表示されます。</div>
+    <div class="f2"><div class="f"><label>巻の範囲（開始巻）</label><input id="bunLo" inputmode="numeric" value="${rg ? rg[0] : ""}"></div><div class="f"><label>巻の範囲（終了巻）</label><input id="bunHi" inputmode="numeric" value="${rg ? rg[1] : ""}"></div></div>
+    <div class="muted" id="bunCost">仕入額の合計 ${yen(cost)}（未入力は0円）</div><div class="muted">商品名：<span id="bunPrev">${esc(setName(ms, rg ? rg[0] : "", rg ? rg[1] : ""))}</span></div>
+    <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn pri" data-act="bundleDo">この範囲で束ねる</button></div>`);
+}
+function newBundleItem(o){
+  const it = Object.assign(blankItem(), {created: new Date().toISOString()}, o);
+  const c = num(o.cost);
+  it.hist = [{at: today(), kind: "reg", text: `仕入れ登録（原価 ${yen(c)}）`, src: "manual"}];
+  return it;
+}
+async function bundleDo(){
+  if (!BUN) return;
+  const ms = BUN.ids.map(id => S.items.find(x => String(x.id) === id)).filter(Boolean);
+  if (ms.length < 2 || ms.some(m => m.st !== "stock" || memberSet().has(m))){ toast("選んだ商品の状態が変わったため束ねられません"); BUN = null; closeModal(); return; }
+  const cost = ms.reduce((s, m) => s + (num(m.cost) || 0), 0);
+  const allStock = ms.every(m => m.st === "stock" || m.st === "listed");
+  let target;
+  if (BUN.mixed){
+    const name = ((document.getElementById("bunName") || {}).value || "").trim() || mixedName(ms);
+    const lp = ms.reduce((s, m) => s + (num(m.listPrice) || 0), 0);
+    target = newBundleItem({name, work:"", setk:"セット", range:"", have:"", st: allStock ? "stock" : "cand", cost: allStock ? cost : "", genre: ms[0].genre || "", pub: ms[0].pub || "", cat: ms[0].cat || "",
+      listPrice: lp > 0 ? lp : "", autoBundle:1, mixed:1, memo: "一覧で束ね（まとめ売り）：" + ms.map(m => m.name).join("、")});
+  } else {
+    const lo = num(document.getElementById("bunLo").value), hi = num(document.getElementById("bunHi").value);
+    if (!(lo > 0) || !(hi >= lo)){ toast("巻の範囲を入力してください"); return; }
+    const have = new Set(); for (const m of ms){ const r = itemRangeOf(m); if (r) for (let v = r[0]; v <= r[1]; v++) have.add(v); }
+    target = newBundleItem({name: setName(ms, lo, hi), work: ms[0].work || "", setk:"セット", range: `${lo}-${hi}`, have: [...have].sort((a, b) => a - b).join(","), st: allStock ? "stock" : "cand", cost: allStock ? cost : "",
+      genre: ms[0].genre || "", pub: ms[0].pub || "", cat: ms[0].cat || "", author: ms[0].author || "", autoBundle:1, memo: "一覧で束ね：" + ms.map(m => m.name).join("、")});
+  }
+  S.items.unshift(target); ms.forEach(m => m.inSet = target.id);
+  const mixed = BUN.mixed; BUN = null; UI.sel = {}; UI.selMode = false;
+  await saveState(); closeModal(); UI.masterF = "stock"; render();
+  toast(mixed ? "まとめ売りとして束ねました" : "セットとして束ねました");
+  return target.id;
+}
+// 束ねを解除（SSS unbundleItem と同じ：メンバーの inSet を外す。一覧で束ねた親（autoBundle）は削除、それ以外の親は候補に戻して仕入額を空にする）
+function unbundleAsk(){
+  if (!ED) return; const it = S.items.find(x => x.id === ED.id); if (!it) return;
+  if (it.st === "sold" || it.st === "deal"){ toast("取引中・売却済みの商品は束ねを解除できません"); return; }
+  const n = membersOf(it.id).length;
+  showModal(`<h3>束ねを解除</h3><p>${n}件のメンバーを在庫一覧に戻します。${it.autoBundle ? "この" + (it.mixed ? "まとめ売り" : "セット") + "商品（" + esc(it.name || "") + "）は削除されます（編集中の内容も破棄）。" : "この商品は候補に戻り、仕入額は空になります。"}</p>
+    <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn pri" data-act="unbundleGo">解除する</button></div>`);
+}
+async function unbundleGo(){
+  if (!ED) return; const id = ED.id, it = S.items.find(x => x.id === id);
+  S.items.forEach(m => { if (m.inSet !== undefined && String(m.inSet) === String(id)) delete m.inSet; });
+  if (it && it.autoBundle){
+    for (const k of itemPhotos(it)){ await idbDel("imgs", k); thumbCache.delete(k); }
+    S.items = S.items.filter(x => x.id !== id);
+  } else if (it){ it.st = "cand"; it.cost = ""; if (Array.isArray(it.hist)) it.hist.push({at: today(), kind: "edit", text: "束ねを解除（候補に戻した）", src: "manual"}); }
+  await saveState(); closeModal(); closeEditor(); render(); toast("束ねを解除しました");
+}
+
+/* ---------- §3 読み取りで登録（SSS regOpen / regCode / regAdd と同じ流れ。書誌は取り込み済み biblio のみ・外部通信なし） ---------- */
+// SSS の内蔵 EAN-13 解読（BarcodeDetector の無い iPhone Safari などで使う）をそのまま移植
+function ean13ok(c){ if (!/^\d{13}$/.test(c)) return false; let s = 0; for (let i = 0; i < 12; i++) s += (+c[i]) * (i % 2 ? 3 : 1); return (10 - s % 10) % 10 === +c[12]; }
+function okScanCode(c){ return ean13ok(c) && !/^19[0-9]/.test(c); }   // 書籍の2段目（192…）は無視
+function normCode(v){ const t = String(v ?? "").normalize("NFKC").replace(/[^0-9Xx]/g, "").toUpperCase();
+  if (/^\d{9}[\dX]$/.test(t)) return isbn10to13(t);
+  if (/^\d{13}$/.test(t) || /^\d{8}$/.test(t)) return t; return t.replace(/X/g, ""); }
+const LP = [[3,2,1,1],[2,2,2,1],[2,1,2,2],[1,4,1,1],[1,1,3,2],[1,2,3,1],[1,1,1,4],[1,3,1,2],[1,2,1,3],[3,1,1,2]];
+const GP = LP.map(p => p.slice().reverse());
+const PAR = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
+function matchDigit(R, o, left){
+  const w = [R[o], R[o+1], R[o+2], R[o+3]], sum = w[0] + w[1] + w[2] + w[3]; const v = w.map(x => x * 7 / sum); let best = null, be = 99;
+  const test = (p, d, g) => { let e = 0; for (let k = 0; k < 4; k++) e += Math.abs(v[k] - p[k]); if (e < be){ be = e; best = {d, g}; } };
+  LP.forEach((p, d) => test(p, d, false)); if (left) GP.forEach((p, d) => test(p, d, true));
+  return be < 1.5 ? best : null;
+}
+function tryEAN(R, s){
+  let W = 0; for (let i = 0; i < 59; i++) W += R[s + i]; const m = W / 95;
+  for (const i of [0,1,2,27,28,29,30,31,56,57,58]){ const g = R[s + i] / m; if (g < 0.35 || g > 2.2) return null; }
+  if (s > 0 && R[s - 1] < m * 2.5) return null;
+  const dg = []; let par = "";
+  for (let d = 0; d < 6; d++){ const r = matchDigit(R, s + 3 + d * 4, true); if (!r) return null; dg.push(r.d); par += r.g ? "G" : "L"; }
+  for (let d = 0; d < 6; d++){ const r = matchDigit(R, s + 32 + d * 4, false); if (!r) return null; dg.push(r.d); }
+  const f = PAR.indexOf(par); if (f < 0) return null; const code = f + dg.join(""); return ean13ok(code) ? code : null;
+}
+function decodeRow(L){
+  const n = L.length, W = Math.max(10, n >> 4); const pre = new Float64Array(n + 1); for (let i = 0; i < n; i++) pre[i + 1] = pre[i] + L[i];
+  let mn = 255, mx = 0; for (let i = 0; i < n; i++){ if (L[i] < mn) mn = L[i]; if (L[i] > mx) mx = L[i]; } if (mx - mn < 40) return null;
+  const gmid = (mn + mx) / 2;
+  const thr = [i => gmid,
+    i => { const a = Math.max(0, i - W), b = Math.min(n, i + W); let lo = 255, hi = 0; for (let j = a; j < b; j += 2){ if (L[j] < lo) lo = L[j]; if (L[j] > hi) hi = L[j]; } return hi - lo < (mx - mn) * 0.3 ? gmid : (lo + hi) / 2; },
+    i => { const a = Math.max(0, i - W), b = Math.min(n, i + W); return Math.min((pre[b] - pre[a]) / (b - a), gmid + (mx - mn) * 0.25); }];
+  for (const T of thr){
+    const bits = new Uint8Array(n); for (let i = 0; i < n; i++) bits[i] = L[i] < T(i) ? 1 : 0;
+    const R = [], Cc = []; let c = bits[0], len = 0; for (let i = 0; i < n; i++){ if (bits[i] === c) len++; else { R.push(len); Cc.push(c); c = bits[i]; len = 1; } } R.push(len); Cc.push(c);
+    for (let s = 0; s + 59 <= R.length; s++){ if (Cc[s] !== 1) continue; const r = tryEAN(R, s); if (r) return r; }
+  }
+  return null;
+}
+function decodeImageData(img, W, H){
+  for (let k = 1; k < 16; k++){ const y = Math.round(H * k / 16); const L = new Float32Array(W);
+    for (let x = 0; x < W; x++){ let s = 0; for (const dy of [-1, 0, 1]){ const yy = Math.min(H - 1, Math.max(0, y + dy)); const i = (yy * W + x) * 4; s += img[i] * .299 + img[i + 1] * .587 + img[i + 2] * .114; } L[x] = s / 3; }
+    let r = decodeRow(L); if (!r) r = decodeRow(L.slice().reverse()); if (r && okScanCode(r)) return r; }
+  return null;
+}
+let scanCv = null, scanCx = null;
+function decodeFrame(v){
+  const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const W = Math.min(1000, vw), sc = W / vw, H = Math.round(vh * 0.5 * sc);
+  scanCv = scanCv || document.createElement("canvas"); scanCv.width = W; scanCv.height = H; scanCx = scanCx || scanCv.getContext("2d", {willReadFrequently: true});
+  scanCx.drawImage(v, 0, vh * 0.25, vw, vh * 0.5, 0, 0, W, H);
+  return decodeImageData(scanCx.getImageData(0, 0, W, H).data, W, H);
+}
+// 連続読み取り（SSS と同じ：BarcodeDetector があれば使い、無ければ内蔵解読。内蔵解読は同じ値が2回続いたら採用。同じ値は3秒間無視）
+const Scan = {on:false, det:null, last:"", lastT:0, cand:"", candN:0, timer:null, ac:null, box:null, handler:null, mode:""};
+function beep(){ try { Scan.ac = Scan.ac || new (window.AudioContext || window.webkitAudioContext)(); const o = Scan.ac.createOscillator(), g = Scan.ac.createGain(); o.frequency.value = 1800; g.gain.value = .08; o.connect(g); g.connect(Scan.ac.destination); o.start(); o.stop(Scan.ac.currentTime + .08); } catch (e) {} }
+const canCamera = () => !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function");
+async function scanStart(box, handler){
+  if (Scan.on || !box) return false;
+  if (!canCamera()){ toast("この環境ではカメラを使えません。ISBNを入力してください"); return false; }
+  Scan.box = box; Scan.handler = handler;
+  try { Scan.ac = Scan.ac || new (window.AudioContext || window.webkitAudioContext)(); Scan.ac.resume && Scan.ac.resume(); } catch (e) {}
+  box.innerHTML = `<div class="scanbox" id="scanBox"><video playsinline muted autoplay></video><div class="guide"></div><div class="hint">バーコードを白線に合わせてください（連続読み取り中）</div></div>`;
+  const video = box.querySelector("video");
+  try { scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}, audio:false}); }
+  catch (e) { box.innerHTML = ""; toast("カメラを起動できません（" + (e && e.name || "エラー") + "）。ISBNを入力してください"); return false; }
+  if (Scan.box !== box || !document.body.contains(box)){ stopScan(); return false; }
+  video.srcObject = scanStream; try { await video.play(); } catch (e) {}
+  Scan.det = null; Scan.mode = "内蔵の解読";
+  if (typeof window.BarcodeDetector === "function"){ try { const f = window.BarcodeDetector.getSupportedFormats ? await window.BarcodeDetector.getSupportedFormats() : ["ean_13"]; if (f.includes("ean_13")){ Scan.det = new window.BarcodeDetector({formats:["ean_13"]}); Scan.mode = "BarcodeDetector"; } } catch (e) {} }
+  Scan.on = true; Scan.cand = ""; Scan.candN = 0; scanLoop(video);
+  return true;
+}
+async function scanLoop(video){
+  if (!Scan.on) return; let code = null;
+  try { if (Scan.det){ const r = await Scan.det.detect(video); for (const b of r){ if (okScanCode(b.rawValue)){ code = b.rawValue; break; } } } else code = decodeFrame(video); } catch (e) {}
+  if (!Scan.on) return;
+  if (code) scanHit(code);
+  Scan.timer = setTimeout(() => scanLoop(video), Scan.det ? 150 : 80);
+}
+function scanHit(code){
+  if (!Scan.det){ if (code === Scan.cand) Scan.candN++; else { Scan.cand = code; Scan.candN = 1; } if (Scan.candN < 2) return; }
+  const t = Date.now(); if (code === Scan.last && t - Scan.lastT < 3000) return; Scan.last = code; Scan.lastT = t;
+  beep(); const b = document.getElementById("scanBox"); if (b){ b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 350); }
+  if (Scan.handler) Scan.handler(code);
+}
+let REG = null;
+function regOpen(){
+  REG = {log:[], pend:null, chips:[]};
+  const sh = document.getElementById("sheet");
+  sh.innerHTML = `<div class="sh"><button class="xbtn" data-act="regClose" aria-label="閉じる">×</button><b>読み取りで登録</b></div>
+  <div class="body" id="regForm">
+    <div class="card"><div class="muted" style="margin-bottom:8px">先に仕入額（1冊あたり）・仕入日・状態を入れてから、バーコードを続けて読み取ってください。読み取るたびに「仕入れ済み」として登録します。</div>
+      <div class="f2"><div class="f"><label>仕入額（1冊あたり）</label><input id="rgP" inputmode="numeric" placeholder="110" autocomplete="off"></div><div class="f"><label>仕入日</label><input id="rgD" type="date" value="${today()}"></div></div>
+      <div class="f"><label>状態チップ（登録する全件に付けます）</label><div class="chips" id="rgChips" style="margin:0">${COND_CHIPS.map(c => `<button type="button" class="chip" data-act="rgChip" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
+      ${canCamera() ? `<button class="btn pri wide" id="regScanBtn" data-act="regScan">読み取り開始</button>` : `<div class="muted" id="regNoCam">この環境ではカメラが使えません。下の欄にISBNを入力してください。</div>`}
+      <div id="regCam"></div><div id="regPend"></div></div>
+    <div class="card"><div class="sec">読み取れないとき</div>
+      <div class="inrow"><input id="rgIsbn" inputmode="numeric" placeholder="ISBNを入力（10桁・13桁）" autocomplete="off" enterkeyhint="done"><button class="btn" data-act="regIsbn">追加</button></div>
+      <div class="inrow"><input id="rgName" placeholder="商品名を手入力（例：鋼の錬金術師 3巻）" autocomplete="off" enterkeyhint="done"><button class="btn" data-act="regManual">追加</button></div>
+      <button class="btn wide" data-act="regForm">詳細フォームで手入力登録（ISBNなし・本以外も）</button></div>
+    <div class="card"><div class="sec">この画面で登録した商品</div><div id="regLog" class="reglog">まだありません</div></div>
+  </div>`;
+  sh.hidden = false; sh.scrollTop = 0; document.body.style.overflow = "hidden";
+}
+function regClose(){ stopScan(); REG = null; const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; document.body.style.overflow = ""; render(); }
+function regParams(){
+  const raw = (document.getElementById("rgP") || {}).value;
+  if (raw === undefined || String(raw).trim() === "" || !Number.isFinite(cnum(raw)) || cnum(raw) < 0){ toast("先に仕入額（1冊あたり）を入れてください"); return null; }
+  return {p: cnum(raw), d: normDate((document.getElementById("rgD") || {}).value) || today(), chips: REG ? REG.chips.slice() : []};
+}
+// 重複の注意（SSS regDup と同じ：仕入れ済み・出品中で、同じコード、または同じ作品の同じ巻）
+function regDup(code, title){ const c = normCode(code), k = workKey(title), v = volOf(title);
+  return S.items.filter(it => (it.st === "stock" || it.st === "listed") && ((c && normCode(it.code) === c) || (v && keyMatch(k, itemKey(it)) && itemVols(it).has(v)))); }
+function keyMatch(a, b){ if (!a || !b) return false; if (a === b) return true; const s1 = a.length <= b.length ? a : b, l = a.length <= b.length ? b : a; return s1.length >= 3 && l.includes(s1); }
+function itemVols(it){ if (it.have){ const s = parseVols(it.have); if (s.size) return s; } const r = itemRangeOf(it); const out = new Set(); if (r) for (let v = r[0]; v <= r[1]; v++) out.add(v); return out; }
+async function regAdd(o){
+  const P = regParams(); if (!P) return false;
+  const b = o.b ? biblioToItem(o.b, o.code) : {};
+  const it = Object.assign(blankItem(), {author: b.author || "", pub: b.pub || "", vols: b.vols || "", cat: b.cat || ""},
+    {name: o.title || o.code, code: o.code || "", st: "stock", cost: P.p, date: P.d, condChips: P.chips, created: new Date().toISOString()});
+  it.hist = [{at: P.d, kind: "reg", text: `仕入れ登録（原価 ${yen(P.p)}）` + (o.code ? `・読み取り（${o.code}）` : "・手入力"), src: "manual"}];
+  S.items.unshift(it);
+  await saveState();
+  if (REG){ REG.log.unshift(it.name); const l = document.getElementById("regLog"); if (l) l.innerHTML = REG.log.map(n => `<div>登録：${esc(n)}</div>`).join(""); }
+  toast("登録：" + it.name);
+  return it.id;
+}
+function regPendShow(){
+  const e = document.getElementById("regPend"); if (!e) return; const P = REG && REG.pend;
+  if (!P){ e.innerHTML = ""; return; }
+  if (P.nobib) e.innerHTML = `<div class="pend" id="regPendBox"><b>書誌が見つかりませんでした（${esc(P.code)}）</b><div class="muted" style="margin:4px 0 8px">取り込み済みの書誌にありません。商品名を入れて登録できます。</div>
+    <div class="f"><input id="rgPendName" placeholder="商品名" autocomplete="off"></div><div class="row"><button class="btn" data-act="regPendSkip">スキップ</button><button class="btn pri grow" data-act="regPendManual">この名前で登録</button></div></div>`;
+  else e.innerHTML = `<div class="pend" id="regPendBox"><b>同じ巻がすでに在庫にあります</b><div class="muted" style="margin:4px 0 8px">${esc(P.dups.map(d => d.name).join("、"))}<br>読み取った本：${esc(P.title)}</div>
+    <div class="row"><button class="btn" data-act="regPendSkip">スキップ</button><button class="btn pri grow" data-act="regPendOk">それでも登録</button></div></div>`;
+}
+async function regCode(raw){
+  if (!REG || REG.pend) return null; if (!regParams()) return null;
+  const code = normCode(raw), b = lookupBiblio(code), title = b ? biblioToItem(b, code).name : "";
+  if (!b || !title){ REG.pend = {code, nobib:true}; regPendShow(); return "nobib"; }
+  const o = {code, title, b}, d = regDup(code, title);
+  if (d.length){ REG.pend = Object.assign(o, {dups:d}); regPendShow(); return "dup"; }
+  return regAdd(o);
 }
 
 /* 新規登録（バーコード／ISBN手入力） */
@@ -621,31 +930,22 @@ function biblioToItem(b, code){
   return {code: normIsbn(code), name: pick("title","name"), author: pick("author","authors"), pub: pick("pub","publisher"), vols: pick("vols"), cat: pick("cat")};
 }
 let scanStream = null;
-function stopScan(){ if (scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; } }
+function stopScan(){
+  Scan.on = false; clearTimeout(Scan.timer); Scan.handler = null;
+  if (scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (Scan.box){ Scan.box.innerHTML = ""; Scan.box = null; }
+  const rb = document.getElementById("regScanBtn"); if (rb) rb.textContent = "読み取り開始";
+}
 function openNew(){
-  const canScan = typeof window.BarcodeDetector === "function" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+  // v1.2.0：BarcodeDetector が無い環境（iPhone Safari など）でも、カメラが使えれば内蔵の EAN-13 解読で読み取る（SSS と同じ）
+  const canScan = canCamera();
   showModal(`<h3>新規登録</h3>
-    ${canScan ? `<button class="btn pri" style="width:100%;margin-bottom:10px" data-act="scan">バーコードを読み取る</button><video id="scanVideo" playsinline muted hidden></video>` : `<div class="muted" style="margin-bottom:8px">この環境ではバーコード読み取りが使えません。ISBNを手入力してください。</div>`}
+    ${canScan ? `<button class="btn pri" style="width:100%;margin-bottom:10px" data-act="scan">バーコードを読み取る</button><div id="scanWrap"></div>` : `<div class="muted" style="margin-bottom:8px">この環境ではバーコード読み取りが使えません。ISBNを手入力してください。</div>`}
     <div class="f"><label>ISBN（手入力）</label><input id="isbnIn" inputmode="numeric" autocomplete="off" placeholder="978…"></div>
     <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn" data-act="manual">書誌なしで手入力</button><button class="btn pri" data-act="isbnGo">ISBNで登録</button></div>`);
 }
-async function startScan(){
-  const v = document.getElementById("scanVideo");
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
-    v.hidden = false; v.srcObject = scanStream; await v.play();
-    const det = new window.BarcodeDetector({formats:["ean_13"]});
-    const loop = async () => {
-      if (!scanStream) return;
-      try {
-        const r = await det.detect(v);
-        const hit = r.map(x => x.rawValue).find(x => /^97[89]\d{10}$/.test(x)) || (r[0] && r[0].rawValue);
-        if (hit){ stopScan(); document.getElementById("isbnIn").value = hit; isbnGo(); return; }
-      } catch (e) {}
-      setTimeout(loop, 250);
-    };
-    loop();
-  } catch (e) { stopScan(); toast("カメラを使えません。手入力してください"); }
+function startScan(){
+  scanStart(document.getElementById("scanWrap"), code => { stopScan(); const i = document.getElementById("isbnIn"); if (i){ i.value = code; isbnGo(); } });
 }
 function isbnGo(){
   const code = normIsbn(document.getElementById("isbnIn").value);
@@ -673,10 +973,19 @@ function openEditor(id, preset){
   const rate = feeRateOf(d);
   const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? "selected" : ""}>${esc(l)}</option>`;
   const cats = [...new Set(S.items.map(i => i.cat).filter(Boolean).map(String))];
+  // v1.2.0 §4 束ね：親なら中身の一覧と「束ねを解除」、メンバーなら所属先を表示
+  const mem = isNew ? [] : membersOf(d.id);
+  const parent = !isNew && d.inSet !== undefined && d.inSet !== null && d.inSet !== "" ? S.items.find(p => String(p.id) === String(d.inSet) && String(p.id) !== String(d.id)) : null;
+  const bunHTML = mem.length ? `<div class="card" id="edBundle"><div class="sec">${d.mixed ? "まとめ売りの中身" : "束ねた単巻"}（${mem.length}件）</div>
+      <div class="mlist">${mem.map(m => `<div><span>${esc(m.name || "（名称未設定）")}</span><span>${yen(num(m.cost))}</span></div>`).join("")}</div>
+      <div class="muted" style="margin:6px 0 8px">仕入額の合計 ${yen(mem.reduce((s, m) => s + num(m.cost), 0))}。中身は在庫一覧・集計に出ず、この商品の金額だけを数えます。</div>
+      <button class="btn wide" data-act="unbundle">束ねを解除</button></div>`
+    : parent ? `<div class="card" id="edBundle"><div class="sec">所属</div><div>「${esc(parent.name || "（名称未設定）")}」に束ねられています。在庫一覧・集計には出ません。</div></div>` : "";
   const sh = document.getElementById("sheet");
   sh.innerHTML = `
   <div class="sh"><button class="xbtn" data-act="edClose" aria-label="閉じる（保存しない）">×</button><b>${isNew ? "新規登録" : "編集"}</b></div>
   <div class="body" id="edForm">
+    ${bunHTML}
     <div class="card"><div class="sec">1. 入力種別</div>
       <div class="f"><select name="kind">${Object.entries(KINDS).map(([k, l]) => opt(k, l, d.kind || "sale")).join("")}</select></div></div>
     <div class="card"><div class="sec">2. 商品マスタ紐付け</div>
@@ -818,14 +1127,16 @@ async function edSave(){
 }
 function closeEditor(){ const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; document.body.style.overflow = ""; ED = null; }
 function edDelete(){
-  const name = ED.draft.name || "（名称未設定）";
-  showModal(`<h3>削除の確認</h3><p>「${esc(name)}」を削除します。元に戻せません。</p>
+  const name = ED.draft.name || "（名称未設定）", nm = membersOf(ED.id).length;
+  showModal(`<h3>削除の確認</h3><p>「${esc(name)}」を削除します。元に戻せません。${nm ? `束ねた中身${nm}件は削除せず、在庫一覧に戻します。` : ""}</p>
     <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn dan" data-act="edDeleteGo">削除する</button></div>`);
 }
 async function edDeleteGo(){
   const id = ED.id, it = S.items.find(x => x.id === id);
   if (it) for (const k of itemPhotos(it)){ await idbDel("imgs", k); thumbCache.delete(k); }
   S.items = S.items.filter(x => x.id !== id);
+  // v1.2.0 束ねた親を削除したら、中身は在庫一覧に戻す（隠れたままにしない）
+  S.items.forEach(m => { if (m.inSet !== undefined && String(m.inSet) === String(id)) delete m.inSet; });
   await saveState();
   closeModal(); closeEditor(); render(); toast("削除しました");
 }
@@ -1132,7 +1443,39 @@ document.addEventListener("click", async (e) => {
     case "complete": { e.stopPropagation(); const it = S.items.find(x => x.id === el.dataset.id);
       if (it){ it.st = "sold"; if (!it.soldDate) it.soldDate = today(); await saveState(); render(); toast("取引完了にしました"); } break; }
     case "edit": openEditor(el.dataset.id); break;
-    case "mf": UI.masterF = el.dataset.f; render(); break;
+    case "mf": if (el.disabled) break; UI.masterF = el.dataset.f; render(); break;
+    /* v1.2.0 §4 束ねる */
+    case "selOn": UI.selMode = true; UI.sel = {}; UI.masterF = "stock"; render(); break;
+    case "selOff": UI.selMode = false; UI.sel = {}; render(); break;
+    case "selTap": { const id = el.dataset.id, it = S.items.find(x => String(x.id) === id);
+      if (!it || it.st !== "stock"){ toast("束ねられるのは仕入れ済みの商品だけです"); break; }
+      if (UI.sel[id]) delete UI.sel[id]; else UI.sel[id] = 1;
+      const on = !!UI.sel[id], n = Object.keys(UI.sel).length; el.classList.toggle("sel", on); el.setAttribute("aria-pressed", String(on));
+      const sn = document.getElementById("selN"); if (sn) sn.textContent = n + "件 選択中";
+      const bm = document.querySelector('[data-act="bundleMake"]'); if (bm) bm.disabled = n < 2; break; }
+    case "bundleMake": if (!el.disabled) bundleMake(); break;
+    case "bundleDo": bundleDo(); break;
+    case "unbundle": unbundleAsk(); break;
+    case "unbundleGo": unbundleGo(); break;
+    /* v1.2.0 §3 読み取りで登録 */
+    case "regOpen": regOpen(); break;
+    case "regClose": regClose(); break;
+    case "rgChip": { const c = el.dataset.c; if (!REG) break; const i = REG.chips.indexOf(c); if (i >= 0) REG.chips.splice(i, 1); else REG.chips.push(c); el.classList.toggle("on", i < 0); break; }
+    case "regScan": if (Scan.on){ stopScan(); break; } if (!regParams()) break;
+      scanStart(document.getElementById("regCam"), regCode).then(r => { const b = document.getElementById("regScanBtn"); if (b && r && Scan.on) b.textContent = "読み取り停止"; }); break;
+    case "regIsbn": { const inp = document.getElementById("rgIsbn"), v = normCode(inp.value);
+      if (!/^\d{13}$/.test(v) && !/^\d{8}$/.test(v)){ toast("ISBN／JANを確認してください"); break; }
+      if (!regParams()) break; inp.value = ""; regCode(v); break; }
+    case "regManual": { const inp = document.getElementById("rgName"), n = (inp.value || "").trim();
+      if (!n){ toast("商品名を入力してください"); break; } if (!regParams()) break;
+      const d = regDup("", n);
+      if (d.length){ REG.pend = {code:"", title:n, dups:d}; regPendShow(); inp.value = ""; break; }
+      if (await regAdd({title:n})) inp.value = ""; break; }
+    case "regForm": { const d0 = normDate((document.getElementById("rgD") || {}).value) || today(); stopScan(); REG = null; openEditor(null, {st:"stock", date:d0}); break; }
+    case "regPendOk": { const P = REG && REG.pend; if (!P) break; if (await regAdd(P)){ REG.pend = null; regPendShow(); } break; }
+    case "regPendManual": { const P = REG && REG.pend; if (!P) break; const n = ((document.getElementById("rgPendName") || {}).value || "").trim();
+      if (!n){ toast("商品名を入力してください"); break; } if (await regAdd({code:P.code, title:n})){ REG.pend = null; regPendShow(); } break; }
+    case "regPendSkip": if (REG){ REG.pend = null; regPendShow(); } break;
     case "scan": startScan(); break;
     case "isbnGo": isbnGo(); break;
     case "manual": closeModal(); openEditor(null, {}); break;
@@ -1184,9 +1527,19 @@ document.addEventListener("input", (e) => {
     edRecalc();
     return;
   }
+  if ((e.target.id === "bunLo" || e.target.id === "bunHi") && BUN){
+    const ms = BUN.ids.map(id => S.items.find(x => String(x.id) === id)).filter(Boolean), pv = document.getElementById("bunPrev");
+    if (pv && ms.length) pv.textContent = setName(ms, document.getElementById("bunLo").value.trim(), document.getElementById("bunHi").value.trim());
+    return;
+  }
   if (e.target.id === "tq"){ UI.tq = e.target.value; document.getElementById("tplList").innerHTML = tplList(); return; }
   if (e.target.dataset && e.target.dataset.fv !== undefined && FILL){ const t = S.templates.find(x => String(x.id) === FILL.id); const pv = document.getElementById("fillPv"); if (t && pv) pv.textContent = fillText(tBody(t), FILL.vs, fillVals()); return; }
   if (e.target.dataset && e.target.dataset.c && C){ C[e.target.dataset.c] = e.target.value; calcLive(); return; }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.isComposing) return;
+  const m = {rgIsbn:"regIsbn", rgName:"regManual", rgPendName:"regPendManual"}[e.target.id];
+  if (m){ e.preventDefault(); const b = document.querySelector(`[data-act="${m}"]`); if (b) b.click(); }
 });
 document.addEventListener("change", (e) => {
   if (e.target.dataset && e.target.dataset.cset) calcSetSave(e.target.dataset.cset, e.target.value);
@@ -1220,7 +1573,8 @@ const ready = (async () => {
   setTab("analysis");
 })();
 window.__seller = {get S(){ return S; }, ready, calc, monthAgg, parseBackup, buildExport, buildCSV, restoreFromText, setTab, openEditor, UI, APP_VER, lookupBiblio,
-  get LOC(){ return LOC; }, get ED(){ return ED; }, get lastCopy(){ return LAST_COPY; }, edPhotoAdd, calcProfit, perVol, capOf, needCalc, estCalc, fileToPhoto, frameToPhoto, csvRows};
+  get LOC(){ return LOC; }, get ED(){ return ED; }, get lastCopy(){ return LAST_COPY; }, edPhotoAdd, calcProfit, perVol, capOf, needCalc, estCalc, fileToPhoto, frameToPhoto, csvRows,
+  invAgg, memberSet, membersOf, mixedName, setName, workKey, itemKey, normCode, ean13ok, decodeImageData, regCode, regDup, get REG(){ return REG; }, get Scan(){ return Scan; }};
 </script>
 </body>
 </html>
