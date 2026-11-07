@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<!-- v1.3.0 §3：背景ぼかしの被写体切り抜き（POST と同じ MediaPipe）を読み込むためだけに、固定バージョンのライブラリとモデルの置き場所に限って取得を許可する（データは送らない） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; worker-src blob: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>セラー</title>
 <style>
@@ -97,17 +98,6 @@ button.stbtn{min-height:26px}
 .bigp{text-align:center;padding:12px;border-radius:10px;background:var(--soft);margin:6px 0 4px}
 .bigp .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
 .foot{position:fixed;left:0;right:0;bottom:0;z-index:21;display:grid;grid-template-columns:1fr 2fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
-/* §5 商品画像（複数枚） */
-.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.pc{position:relative;min-width:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
-.pc .pimg{display:block;width:100%;aspect-ratio:1/1;border:0;padding:0;background:var(--soft);overflow:hidden}
-.pc .pimg img{width:100%;height:100%;object-fit:cover;display:block}
-.pc .pmain{position:absolute;left:4px;top:4px;background:var(--ink);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px}
-.pc .pbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
-.pc .pbtns button{min-height:34px;border:0;background:#fff;font-size:12px;padding:0;min-width:0;color:var(--ink)}
-.pc .pbtns button+button{border-left:1px solid var(--line)}
-.pempty{grid-column:1/-1;border:1px dashed var(--line2);border-radius:8px;padding:18px;text-align:center;color:var(--mute);font-size:12px;font-weight:600;letter-spacing:.5px}
-.pview{width:100%;max-height:60vh;object-fit:contain;background:var(--soft);border-radius:8px;display:block}
 #modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 #modal .box{background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;max-height:90vh;overflow:auto;min-width:0}
 #modal .box h3{margin:0 0 8px;font-size:16px}
@@ -167,17 +157,137 @@ details.fold>.in{padding:0 12px 12px}
 .mlist div{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;min-width:0}
 .mlist div span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mlist div span:last-child{flex:none;font-variant-numeric:tabular-nums}
-/* v1.2.0 §3 読み取りで登録 */
-.scanbox{position:relative;border-radius:8px;overflow:hidden;background:#000;margin-top:8px}
-.scanbox video{width:100%;display:block;max-height:46vh;object-fit:cover}
-.scanbox .guide{position:absolute;left:8%;right:8%;top:50%;height:0;border-top:2px solid #fff;box-shadow:0 0 0 1px #000}
-.scanbox.hit{outline:4px solid #fff;outline-offset:-4px}
-.scanbox .hint{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;text-align:center}
-.pend{border:1px solid var(--ink);border-radius:10px;padding:10px;margin-top:10px;background:#fff}
-.reglog{font-size:13px;color:var(--sub);word-break:break-word}
-.reglog div{padding:4px 0;border-bottom:1px solid var(--line)}
-.inrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:8px}
-.inrow input{width:100%;min-width:0;border:1px solid var(--line2);border-radius:8px;padding:9px 10px;background:#fff}
+/* v1.3.0 §1 月別推移グラフの色（グラフ限定の例外。凡例も同じ色） */
+.legend .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
+/* v1.3.0 §2 読み取りで登録：SSS 台帳版の CSS（.banner/#cam/.sec/.fld/.grid3/.inline-in/.note/.btn/.row/.scanbtn）を #sheet.sss の中だけに適用。
+   色だけはセラーのモノクロに合わせる（SSS の黄系バナー・赤いガイド線・緑の読み取り枠 → 白黒） */
+#sheet.sss{--sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--r-lg:18px;--r-md:12px;--r-sm:9px;--fs-sec:12px;--fs-sheet:17px;--h-btn:44px;--h-input:44px;--line2s:#dededa;--mut:#77776f;--mut2:#9a9a94;--safe:env(safe-area-inset-bottom,0px)}
+#sheet.sss .sh{display:flex;align-items:center;gap:var(--sp2);padding:calc(env(safe-area-inset-top,0px) + var(--sp3)) 16px var(--sp3);border-bottom:1px solid var(--line);background:#fbfbfa}
+#sheet.sss .sh h2{font-size:var(--fs-sheet);margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sheet.sss .sb{padding:var(--sp3) 16px calc(30px + var(--safe))}
+#sheet.sss .row{display:flex;gap:8px;align-items:center}
+#sheet.sss .btn{background:#fff;border:1px solid var(--line2s);border-radius:var(--r-md);height:var(--h-btn);min-height:0;padding:0 14px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:#141414}
+#sheet.sss .btn.pri{background:#141414;border-color:#141414;color:#fff}
+#sheet.sss .btn.sm{height:34px;padding:0 11px;font-size:12.5px;border-radius:var(--r-sm)}
+#sheet.sss .btn.wide{width:100%}
+#sheet.sss .btn:disabled{opacity:.45}
+#sheet.sss .banner{margin:0;padding:10px 12px;border-radius:12px;background:#f2f2f0;border:1px solid #c8c8c8;color:#141414;font-size:13px;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(20,20,20,.12)}
+#sheet.sss .banner button{margin-left:auto;background:#141414;border:0;border-radius:9px;padding:7px 11px;color:#fff;white-space:nowrap;font-weight:700;font-size:12.5px}
+#sheet.sss #cam{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#1b1b1e;margin-bottom:var(--sp2);height:170px}
+#sheet.sss #cam video{width:100%;height:100%;object-fit:cover;display:block}
+#sheet.sss #cam .guide{position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(255,255,255,.9);box-shadow:0 0 8px rgba(255,255,255,.9)}
+#sheet.sss #cam .hint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:12px;color:#ddd;text-shadow:0 1px 2px #000}
+#sheet.sss #cam.hit{outline:4px solid #fff;outline-offset:-4px}
+#sheet.sss .sec{font-size:var(--fs-sec);font-weight:800;letter-spacing:.05em;color:#55554f;margin:18px 2px 6px}
+#sheet.sss .fld{margin-bottom:var(--sp3)}
+#sheet.sss .fld label{display:block;font-size:11px;color:var(--mut2);font-weight:700;letter-spacing:.04em;margin-bottom:var(--sp1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheet.sss .fld input{width:100%;min-width:0;max-width:100%;background:#fff;border:1px solid var(--line2s);border-radius:var(--r-md);height:var(--h-input);padding:0 var(--sp2);font-size:16px}
+#sheet.sss .fld input[type=date]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;line-height:var(--h-input);text-align:left}
+#sheet.sss .fld input[type=date]::-webkit-date-and-time-value{text-align:left;min-width:0}
+#sheet.sss .grid3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:0 var(--sp2);align-items:start}
+#sheet.sss .grid3>*{min-width:0;max-width:100%}
+#sheet.sss .inline-in{width:92px;background:#fff;border:1px solid var(--line2s);border-radius:var(--r-md);height:38px;padding:0 var(--sp2);font-size:16px;text-align:right}
+#sheet.sss .note{font-size:12px;color:var(--mut)}
+#sheet.sss .mt2{margin-top:var(--sp2)}#sheet.sss .mb2{margin-bottom:var(--sp2)}
+#sheet.sss .grow{flex:1;min-width:0}
+.scanbtn{width:100%;height:50px;font-size:14.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.scanbtn svg{width:19px;height:19px}
+.invsub{text-align:center;margin:7px 0 10px;font-size:12px;color:var(--mute)}
+.cell .pp{font-size:10.5px;color:var(--sub);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* v1.3.0 §3 写真：POST 統合版の CSS（撮影画面・写真の管理・編集・背景ぼかし）を .pst の中だけに適用。
+   色だけはセラーのモノクロに合わせる（POST の青・緑・黄のアクセント → 黒・グレー。黄色バナーは書き出す画像の中だけ） */
+.pst{--bg2:#ececea;--line:#e7e7e2;--tx:#141414;--mut:#77776f;--mut2:#9a9a94;--acc:#141414;--pos:#141414;--posbg:#ececea;--neg:#b3261e;--amb:#55554f;--safe:env(safe-area-inset-bottom,0px)}
+#shoot{position:fixed;inset:0;z-index:30;background:#fbfbfa;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px calc(40px + env(safe-area-inset-bottom,0px))}
+#psheet{position:fixed;inset:0;z-index:35;background:#fbfbfa;display:flex;flex-direction:column}
+#psheet .sh{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;border-bottom:1px solid var(--line);background:#fff}
+#psheet .sh h3{font-size:16px;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#psheet .sb{flex:1;overflow:auto;padding:12px 16px calc(40px + var(--safe))}
+.pst button{cursor:pointer;background:none;border:0;padding:0;min-height:0}
+.pst .h-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pst .sub{font-size:12px;color:var(--mut)}
+.pst .nw{white-space:nowrap}
+.pst .lnk{font-size:12.5px;font-weight:700;color:var(--acc);text-decoration:none;min-height:0;padding:0}
+.pst .chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3.5px 8px;border-radius:999px;background:#f0f0ec;color:#55554f;white-space:nowrap;border:0;min-height:0}
+.pst .fchip{font-size:12px;font-weight:600;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid #e3e3de;color:#55554f;white-space:nowrap;flex:none}
+.pst .fchip.on{background:var(--tx);color:#fff;border-color:var(--tx)}
+.pst .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;margin-bottom:0}
+.pst .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;font-weight:700;border:1px solid transparent;min-height:44px;padding:0 14px;font-size:14px;white-space:nowrap;background:#fff;color:var(--tx)}
+.pst .btn-pri{background:var(--tx);color:#fff;width:100%;font-size:14.5px}
+.pst .btn-acc{background:var(--acc);color:#fff}
+.pst .btn-ghost{background:#fff;border-color:#dededa;color:var(--tx)}
+.pst .btn-dng{background:#fff;border-color:#e8c2bf;color:var(--neg)}
+.pst .btn.sm{min-height:34px;padding:0 10px;font-size:12px;border-radius:10px}
+.pst .btn.wide{flex:1;width:auto}
+.pst .btn:disabled{opacity:.45}
+.pst .btns{display:flex;gap:8px;flex-wrap:wrap}
+.pst .back{font-size:13px;color:var(--mut);padding:4px 0}
+.pst .dtitle{font-size:17px;font-weight:800;margin-top:8px;overflow-wrap:anywhere}
+.pst .photos{display:flex;gap:7px;margin-top:9px;overflow-x:auto;padding-bottom:2px}
+.pst .ph{width:64px;height:64px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;text-align:center;line-height:1.3;position:relative;overflow:hidden;background:#cfd3d6;cursor:pointer}
+.pst .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pst .ph .lbl{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);font-size:8.5px;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pst .ph.vac{background:#fff;border:1.5px dashed #cfcfc9;color:var(--mut2)}
+.pst .ph.vac .tp{margin-top:-12px}
+.pst .ph.vac .lbl{background:#f0f0ec;color:#77776f}
+.pst .camin{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.pst .ck{font-size:11px;font-weight:700;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:5px 9px;white-space:nowrap;letter-spacing:0;background:#fff}
+.pst .ck.on{background:var(--posbg);border-color:#c8c8c8;color:var(--pos)}
+.pst .ck:disabled{opacity:.5}
+.pst .secttl{font-size:12px;font-weight:800;letter-spacing:.05em;color:#55554f;margin:16px 0 2px;white-space:nowrap}
+.pst details.fold{margin-top:12px;background:none;border:0;border-radius:0;margin-bottom:0}
+.pst details.fold>summary{list-style:none;cursor:pointer;font-size:12.5px;color:#55554f;font-weight:600;display:flex;justify-content:space-between;white-space:nowrap;padding:0}
+.pst details.fold.wrap>summary{white-space:normal;gap:8px}
+.pst details.fold>summary::-webkit-details-marker{display:none}
+.pst details.fold>summary::after{content:"▸";color:var(--mut);flex:none}.pst details.fold[open]>summary::after{content:"▾"}
+.pst .bigframe{display:block;position:relative;margin-top:10px;width:100%;aspect-ratio:4/3;max-height:330px;background:#1b1b1e;border-radius:22px;overflow:hidden;cursor:pointer;color:#fff}
+.pst .bigframe img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.pst .bigframe .guide{position:absolute;inset:40px 30px;border:1.5px solid rgba(255,255,255,.75);border-radius:6px}
+.pst .bigframe .guide:before,.pst .bigframe .guide:after{content:"";position:absolute;background:rgba(255,255,255,.3)}
+.pst .bigframe .guide:before{left:50%;top:0;bottom:0;width:1px}.pst .bigframe .guide:after{top:50%;left:0;right:0;height:1px}
+.pst .bigframe .tap{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-weight:800;font-size:15px;letter-spacing:.06em;padding:0 40px;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.pst .bigframe .tap small{display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:6px;letter-spacing:0;line-height:1.5}
+.pst .bigframe .ov{position:absolute;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:700;padding:3.5px 8px;border-radius:999px}
+.pst .cuts{display:flex;gap:7px;margin-top:11px;overflow-x:auto;padding-bottom:2px}
+.pst .cut{flex:1 0 50px;text-align:center;font-size:10px;font-weight:700;color:var(--mut);line-height:1.3}
+.pst .cut .bx{height:44px;border-radius:10px;background:var(--bg2);border:1px solid #e0e0db;display:flex;align-items:center;justify-content:center;font-size:15px;color:#b9b9b3;margin-bottom:4px}
+.pst .cut.done .bx{background:var(--posbg);border-color:#c8c8c8;color:var(--pos)}
+.pst .cut.now .bx{background:#fff;border-color:var(--tx);color:var(--tx)}
+.pst .cut.now{color:var(--tx)}
+.pst .flag{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-top:8px}
+.pst .flag>*{min-width:0}
+.pst .flag>span{font-size:12px;color:var(--mut);white-space:nowrap}
+.pst .seg{display:flex;min-width:0;background:#efefeb;border-radius:12px;padding:3px;border:0;margin-bottom:0;overflow:visible}
+.pst .seg button{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:center;font-size:12px;font-weight:700;padding:7px 0;border-radius:9px;color:var(--mut);white-space:nowrap;background:none}
+.pst .seg button.on{background:#fff;color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.pst .flag input.memo1{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;height:38px;padding:0 8px;background:#fff}
+.pst .tog{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-top:8px}
+.pst .tog input{width:20px;height:20px;accent-color:var(--tx);flex:none}
+.pst .shotrow{display:grid;grid-template-columns:72px 1fr;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
+.pst .shotrow .ph{width:72px;height:72px}
+.pst .shotrow .lb{font-weight:700;font-size:13px}
+.pst .shotrow .gd{font-size:11px;color:var(--mut);margin:2px 0 6px}
+.pst .bdg{display:inline-block;font-size:10px;border-radius:6px;padding:0 6px;border:1px solid var(--line);color:var(--mut);margin-left:4px;font-weight:600}
+.pst .bdg.req{color:var(--amb);border-color:#bdbdb6}.pst .bdg.ok{color:var(--pos);border-color:#c8c8c8}.pst .bdg.cover{background:var(--acc);border-color:var(--acc);color:#fff}
+.pst .model{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--mut);margin-bottom:6px;cursor:pointer}
+.pst .model img{width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.pst .selbox{width:22px;height:22px;flex:none;align-self:center;accent-color:var(--tx)}
+.pst .srch{display:flex;gap:8px;margin-top:12px}
+.pst .srch input{flex:1;min-width:0;background:#fff;border:1px solid var(--line);border-radius:12px;height:42px;padding:0 12px}
+.pst .imgpv{position:relative;display:block;margin:0 auto 10px;max-width:100%;width:fit-content}
+.pst .imgpv img{display:block;max-width:100%;max-height:50vh;border-radius:8px}
+.pst .imgpv svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pst .cropbox{position:relative;width:min(320px,100%);aspect-ratio:1/1;margin:0 auto;overflow:hidden;border-radius:8px;background:#000;touch-action:none;outline:2px solid #fff}
+.pst .cropbox img{position:absolute;max-width:none;user-select:none;-webkit-user-select:none;pointer-events:none}
+.pst .cropbox svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pst .cropbox svg line{stroke:#fff;stroke-opacity:.7;stroke-width:1}.pst .cropbox svg line.c{stroke:#fff;stroke-opacity:.9;stroke-dasharray:6}
+.pst .cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pst .cmp img{width:100%;border-radius:8px}
+.pst .mk{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.6);pointer-events:none}
+.pst .blst{margin:0 0 8px;font-size:12px;color:var(--acc)}
+.pst .blst .bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.pst .blst .bar i{display:block;height:100%;width:40%;background:var(--acc);animation:blbar 1.1s linear infinite}
+@keyframes blbar{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+.pst .gdbox{background:#f2f2f0;border:1px solid #d6d6d2;color:#141414;border-radius:12px;padding:8px 10px;font-size:12.5px;margin-bottom:8px}
+.pst .fld{margin-bottom:12px}.pst .fld textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:8px}
 </style>
 </head>
 <body>
@@ -194,11 +304,12 @@ details.fold>.in{padding:0 12px 12px}
 <div id="sheet" hidden></div>
 <div id="modal" hidden></div>
 <input type="file" id="restoreFile" accept="application/json,.json" hidden>
-<input type="file" id="photoFile" accept="image/*" multiple hidden>
-<input type="file" id="camFile" accept="image/*" capture="environment" hidden>
+<div id="shoot" class="pst" hidden></div>
+<div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.2.0";
+const APP_VER = "1.3.0";
+const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
 const ST_ORDER = ["stock","listed","deal","sold","cand"];
@@ -257,7 +368,10 @@ function cleanLocal(v){
   const n = (x, d) => x !== undefined && x !== "" && Number.isFinite(Number(x)) ? Number(x) : d;
   return {pins: Array.isArray(s.pins) ? s.pins.filter(x => typeof x === "string") : [],
     calc: {ship: n(c.ship, LOCAL_DEF.calc.ship), fee: n(c.fee, LOCAL_DEF.calc.fee), rate: n(c.rate, LOCAL_DEF.calc.rate)},
-    blur: ["none","w","m","s"].includes(s.blur) ? s.blur : LOCAL_DEF.blur};
+    blur: ["none","w","m","s"].includes(s.blur) ? s.blur : LOCAL_DEF.blur,
+    // v1.3.0 §3 POST の S.settings.autoBlur（撮影後に背景ぼかし）と S.models（お手本）に当たる端末内の設定
+    autoBlur: s.autoBlur === true,
+    models: isPlainObj(s.models) ? Object.fromEntries(Object.entries(s.models).filter(([k, v]) => typeof k === "string" && typeof v === "string")) : {}};
 }
 function saveLocal(){ return idbPut("meta", "local", LOC); }
 async function loadLocal(){ LOC = cleanLocal(await idbGet("meta", "local")); }
@@ -384,28 +498,46 @@ async function applyRestore(next){
   // 直前の状態を控えとして保存
   await idbPut("meta", "snap", {at:new Date().toISOString(), state:S});
   // 新しい items が参照しない写真は削除
-  const keep = new Set(next.items.flatMap(i => itemPhotos(i)));
+  // v1.3.0：撮影リスト（ph.shots）の写真・背景ぼかしのマスク・お手本も「参照あり」として残す
+  const keep = new Set(next.items.flatMap(i => itemImgIds(i)).concat(Object.values(LOC.models)));
   for (const k of await idbKeys("imgs")) if (!keep.has(k)) await idbDel("imgs", k);
   const have = new Set(await idbKeys("imgs"));
   for (const it of next.items){
     if (Array.isArray(it.photos)) it.photos = it.photos.filter(k => typeof k === "string" && have.has(k));
     if (it.thumb && !have.has(it.thumb)) it.thumb = "";
     if (Array.isArray(it.photos) && it.photos.length && it.thumb !== it.photos[0]) it.thumb = it.photos[0];
+    if (isPlainObj(it.ph) && Array.isArray(it.ph.shots)){
+      for (const s of it.ph.shots) if (s && s.imgId && !have.has(s.imgId)){ s.imgId = null; s.edit = {}; s.base = {}; }
+      it.ph.shots = it.ph.shots.filter(s => s && (s.imgId || !s.collage));
+    }
   }
   S = next;
-  thumbCache.clear();
+  thumbCache.clear(); for (const u of URLS.values()) URL.revokeObjectURL(u); URLS.clear();
+  PUI.iid = null; const sh = document.getElementById("shoot"); if (sh){ sh.hidden = true; sh.innerHTML = ""; }
   await saveState();
 }
 function countSt(items){ const c = {}; for (const it of items) c[it.st] = (c[it.st] || 0) + 1; return c; }
 function stSummary(items){ const c = countSt(items); return ST_ORDER.filter(k => c[k]).map(k => ST_LABEL[k] + " " + c[k]).concat(Object.keys(c).filter(k => !ST_LABEL[k]).map(k => (k || "未設定") + " " + c[k])).join("／"); }
 
 /* ---------- 写真 ---------- */
+/* v1.3.0 §3 写真は POST 統合版（newapp/index.html）の撮影まわりをそのまま移植（KOMA v1.2.0 由来）。
+   セラー側の都合で変えたのは次だけ：
+   - 撮影の状態（区分・初版・帯・特典・状態・撮影リスト・バナー等）はアイテムの ph に入れる（SSS の setk 等と名前がぶつからないように）
+   - 写真は IndexedDB seller_app の imgs に {id, orig:Blob, at, item, kind} で保存（キー＝id）。v1.2.0 以前の写真（data URL 文字列）も読める
+   - items[].photos／thumb は撮影リストの並び（写真のある枠）から自動で作り直す（v1.0.0〜v1.2.0 の表示・書き出しとの互換のため）
+   - お手本（POST の S.models）と「撮影後に背景ぼかし」（S.settings.autoBlur）は端末内の LOC に保存 */
 const thumbCache = new Map();
+function dataURLtoBlob(u){ const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(String(u || "")); if (!m || !/^image\/(jpeg|png|webp|gif)$/.test(m[1])) return null;
+  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], {type: m[1]}); }
+// 一覧のサムネイル：v1.2.0 以前の data URL はそのまま、v1.3.0 の写真は撮影リストの編集（回転・ぼかし・切り抜き）を反映して縮小表示
+function shotEditOf(id){ for (const it of S.items){ const sh = it.ph && Array.isArray(it.ph.shots) ? it.ph.shots : null; if (!sh) continue; const s = sh.find(x => x && x.imgId === id); if (s) return s.edit || {}; } return {}; }
 async function thumbURL(id){
   if (!id) return "";
   if (thumbCache.has(id)) return thumbCache.get(id);
   const v = await idbGet("imgs", id).catch(() => null);
-  const u = typeof v === "string" && /^data:image\/(jpeg|png|webp|gif);base64,/.test(v) ? v : "";
+  let u = "";
+  if (typeof v === "string") u = /^data:image\/(jpeg|png|webp|gif);base64,/.test(v) ? v : "";
+  else if (v && typeof v === "object") u = await shotURL(id, shotEditOf(id), 160) || "";
   thumbCache.set(id, u);
   return u;
 }
@@ -413,7 +545,7 @@ function thumbHTML(id){ return id ? `<div class="th" data-thumb="${esc(id)}">NO 
 async function fillThumbs(root){
   for (const el of root.querySelectorAll("[data-thumb]")){
     const u = await thumbURL(el.getAttribute("data-thumb"));
-    if (u){ el.textContent = ""; const im = document.createElement("img"); im.alt = ""; im.src = u; el.appendChild(im); }
+    if (u && el.isConnected){ el.textContent = ""; const im = document.createElement("img"); im.alt = ""; im.src = u; el.appendChild(im); }
   }
 }
 /* v1.1.0 商品画像（複数枚）。items[].photos＝imgs の ID 配列（先頭がメイン）。thumb は常に photos[0] と同じにして v1.0.0 の表示・書き出しと互換を保つ */
@@ -421,57 +553,216 @@ function itemPhotos(it){
   if (Array.isArray(it.photos) && it.photos.length) return it.photos.filter(k => typeof k === "string" && k);
   return it.thumb ? [it.thumb] : [];
 }
-const PHOTO_MAX = 1280;      // 保存する写真の長辺
+// アイテムが参照している imgs のキー（写真・背景ぼかしのマスク）。削除・復元時の掃除に使う
+function itemImgIds(it){
+  const out = new Set(itemPhotos(it));
+  const sh = it && isPlainObj(it.ph) && Array.isArray(it.ph.shots) ? it.ph.shots : [];
+  for (const s of sh){ if (!s) continue; if (s.imgId) out.add(s.imgId); if (s.edit && s.edit.blur && s.edit.blur.mask) out.add(s.edit.blur.mask); }
+  return [...out];
+}
+
+/* ---- ここから POST の撮影（撮影リスト・状態メモ・続き撮影・並べ替え・削除・編集・背景ぼかし） ---- */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const str = v => typeof v === "string" ? v : "";
+const oneLine = v => str(v).replace(/\s+/g, " ").trim();
+const cpCut = (s, n) => { const a = Array.from(String(s)); return a.length > n ? a.slice(0, n).join("") + "…" : a.join(""); };
+function downloadBlob(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+const SETK = ["単品","途中セット","全巻セット","その他"];
+const DEFS = {
+  whole:{label:"全体（表紙側）", guide:"セットでは背表紙がカバーになる（売れている出品のカバーは背表紙主体）。このカットでは全体の量感が伝わる画角で。単品では表紙側で全体を見せる"},
+  spine:{label:"背表紙・巻数の並び", guide:"立てかけて1列に。巻数が端から端まで読める距離で。30巻超は2段組み可、50巻前後からは区間ごとの寄りも撮る"},
+  coverup:{label:"表紙アップ", guide:"全巻分は不要。1巻と最終巻など代表の数冊だけ、表紙いっぱいに正面から"},
+  edge:{label:"小口・天側", guide:"状態の証拠写真。立てた列を斜め上から、小口を画面いっぱいに。ヤケ・シミ・反りが判別できる距離まで寄る。区間ごとに複数枚でもよい"},
+  okuduke:{label:"奥付（初版の証拠）", guide:"初版を売りにする設定では必須になる。売れている出品は奥付を撮っていないため、初版の証拠として見せる差別化用"},
+  obi:{label:"帯アップ", guide:"帯付きを売りにする設定では必須になる。帯は背表紙や並べの中でも読める画角に収めるのが型。このカットは帯の状態を寄って見せる差別化用"},
+  bonus:{label:"特典・付属品", guide:"1枚目に一緒に写し込むか、平置きで全点が入る専用1枚。袋入りのまま全体像が分かる距離で"},
+  cond:{label:"状態が気になる箇所", guide:"傷・折れがある場合のみ。場所が分かる引きと、寄りの2枚で"},
+  narabi:{label:"表紙並べ（巻順）", guide:"やるなら全巻分を完遂する。表紙を巻順に6〜12冊ずつのグリッドで真上から。帯付きの巻は帯が見える向きで"},
+  back:{label:"裏表紙並べ", guide:"バーコード面を巻順にグリッドで並べて真上から。全巻そろっていることの確認用。表紙並べの代替になる"}
+};
+const OPT_KEYS = ["narabi","back"];
+const READABLE = ["okuduke","obi"];
+const PHOTO_MAX = 10;
+const isSet = it => it.setk === "途中セット" || it.setk === "全巻セット";
+function mapSetk(v){ v = String(v || "").normalize("NFKC"); if (!v) return "単品"; if (/全巻/.test(v)) return "全巻セット"; if (/途中|バラ|^セット$|partial|bara|\d+\s*[-〜~]\s*\d+\s*巻/.test(v)) return "途中セット"; if (/単/.test(v) || v === "single") return "単品"; if (v === "set") return "全巻セット"; return SETK.includes(v) ? v : "単品"; }
+const tri = v => ["all","part","none"].includes(v) ? v : "none";
+function reqKeys(it){ const k = ["whole", isSet(it) ? "spine" : "coverup", "edge"];
+  if (it.shoban === "all" || it.shoban === "part") k.push("okuduke"); if (it.obi === "all" || it.obi === "part") k.push("obi"); if (it.bonus) k.push("bonus"); if (it.condBad) k.push("cond"); return k; }
+const coverKey = it => isSet(it) ? "spine" : "whole";
+function canon(it){ const k = reqKeys(it); const ck = coverKey(it); return [ck, ...k.filter(x => x !== ck)]; }
+function mkShot(key, required){ return {key, label: DEFS[key] ? DEFS[key].label : key, required, imgId:null, cover:false}; }
+function finalize(it){ it.shots.forEach((s, i) => { s.cover = i === 0; }); const req = it.shots.filter(s => s.required); it.shotStatus = req.length && req.every(s => s.imgId) ? "撮影完了" : "撮影中"; it.updatedAt = Date.now(); phSync(it); }
+function regen(it){
+  const need = reqKeys(it), order = canon(it), rank = k => { const i = order.indexOf(k); return i < 0 ? 1e9 : i; };
+  it.shots = it.shots.filter(s => s.custom || s.imgId || need.includes(s.key) || s.optional);
+  it.shots.forEach(s => { if (!s.custom && !s.optional) s.required = need.includes(s.key); });
+  for (const k of order){ if (it.shots.some(s => s.key === k && !s.custom)) continue; const ns = mkShot(k, true);
+    const at = it.shots.findIndex(s => rank(s.key) > rank(k)); if (at < 0) it.shots.push(ns); else it.shots.splice(at, 0, ns); }
+  finalize(it); }
+function baseLabel(it, key){ const b = it.shots.find(s => s.key === key && !s.dup); if (b) return b.label; if (DEFS[key]) return DEFS[key].label; const d = it.shots.find(s => s.key === key); return d ? String(d.label).replace(/ \d+$/, "") : key; }
+function mkDup(it, key){ const bl = baseLabel(it, key), same = it.shots.filter(s => s.key === key), used = new Set(same.map(s => s.label)); let n = same.length + 1; while (used.has(`${bl} ${n}`)) n++;
+  return {key, label:`${bl} ${n}`, required:false, imgId:null, cover:false, custom:true, dup:true}; }
+function progress(it){ const r = it.shots.filter(s => s.required); return {done: r.filter(s => s.imgId).length, all: r.length, photos: it.shots.filter(s => s.imgId).length}; }
+const MEMO_KEYS = ["shobanVols","obiVols","condMemo"];
+function condText(it){ const tr = (v, vols) => v === "all" ? "全巻" : v === "part" ? (oneLine(vols) ? `一部（${oneLine(vols)}）` : "一部") : "なし"; const m = oneLine(it.condMemo);
+  return `${oneLine(itemTitle(it)) || "（無題）"}\n初版：${tr(it.shoban, it.shobanVols)}／帯：${tr(it.obi, it.obiVols)}／特典：${it.bonus ? "あり" : "なし"}／状態：${it.condBad ? (m ? `難あり（${m}）` : "難あり") : "良好"}`; }
+function summary(it){ if (it.shoban === "all" && it.obi === "all") return "【初版・帯付き】"; if (it.shoban === "all" && it.obi !== "all") return "【初版】"; if (it.obi === "all" && it.shoban === "none") return "【帯付き】"; return ""; }
+// POST の volOf（タイトルから「n巻／n〜m巻／全n巻」の表記を作る）。セラーには SSS の volOf（巻数の数値）があるので名前だけ変えた
+function phVolOf(it){ const t = String(itemTitle(it)).normalize("NFKC"); let m = t.match(/(\d{1,3})\s*[-〜~ー]\s*(\d{1,3})\s*巻?/); if (m) return `${m[1]}〜${m[2]}巻`; m = t.match(/全\s*(\d{1,3})\s*巻/); if (m) return `全${m[1]}巻`; m = t.match(/(\d{1,3})\s*巻/); return m ? `${m[1]}巻` : ""; }
+function bannerDefault(it){ const w = it.work || itemTitle(it); const v = /巻$/.test(w) ? "" : phVolOf(it); return `${summary(it)}${w}${v ? " " + v : ""}`.trim(); }
+const bannerText = it => (it.banner && it.banner.text) || bannerDefault(it);
+const BN_CHIPS = ["全巻セット","全巻初版","帯付き","美品","送料込み"];
+function bnToggle(text, w){ text = String(text || "").trim(); if (!text.includes(w)) return (text + " " + w).trim();
+  return text.split(w).join(" ").replace(/【[\s・]*】/g, " ").replace(/【[\s・]+/g, "【").replace(/[\s・]+】/g, "】").replace(/[ 　]{2,}/g, " ").trim(); }
+
+/* 画像の保存：POST の idbGet/idbPut/idbDel（キー＝レコードの id）をセラーの imgs ストアに対応させる */
+const pGet = id => idbGet("imgs", id);
+const pPut = rec => idbPut("imgs", rec.id, rec);
+const pDel = id => { thumbCache.delete(id); return idbDel("imgs", id); };
+/* ---------- 画像処理 ---------- */
+const URLS = new Map();
+const hasBlur = ed => !!(ed && ed.blur && ed.blur.mask);
+const isPlain = ed => !ed || (!ed.rot && !ed.square && !ed.auto && !hasBlur(ed));
+// v1.2.0 以前の写真は data URL 文字列のまま imgs に入っているので、Blob に直して同じ処理に乗せる
+const srcOf = r => typeof r === "string" ? dataURLtoBlob(r) : (r && (r.orig || r.cur) || null);
+async function shotURL(id, ed, max){ if (!id) return null; const k = id + "|" + JSON.stringify(ed || {}) + "|" + (max || 0); if (URLS.has(k)) return URLS.get(k);
+  const r = await pGet(id).catch(() => null); const src = srcOf(r); if (!src) return null; let b; try { b = (isPlain(ed) && !max) ? src : await renderEdit(src, ed || {}, max); } catch (e) { return null; } const u = URL.createObjectURL(b); URLS.set(k, u); return u; }
+const imgURL = id => shotURL(id, {}, 0);
+async function shotBlob(s){ const r = await pGet(s.imgId).catch(() => null); const src = srcOf(r); if (!src) return null; return isPlain(s.edit) ? src : renderEdit(src, s.edit, 0); }
+function dropURL(id){ for (const [k, u] of [...URLS]) if (k.startsWith(id + "|")){ URL.revokeObjectURL(u); URLS.delete(k); } thumbCache.delete(id); }
+async function bitmap(blob){ if (window.createImageBitmap){ try { return await createImageBitmap(blob); } catch (e) {} }
+  return await new Promise((res, rej) => { const u = URL.createObjectURL(blob); const im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error("画像を読み込めません")); }; im.src = u; }); }
+const bW = b => b.width || b.naturalWidth, bH = b => b.height || b.naturalHeight;
 function cv(w, h){ const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
-function loadImg(file){
-  return new Promise((res, rej) => {
-    const url = URL.createObjectURL(file), im = new Image();
-    im.onload = () => { URL.revokeObjectURL(url); res(im); };
-    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("画像を読み込めません")); };
-    im.src = url;
-  });
-}
-function fitCanvas(src, sw, sh, max){
-  const k = Math.min(1, max / Math.max(sw, sh));
-  const c = cv(Math.max(1, Math.round(sw * k)), Math.max(1, Math.round(sh * k)));
-  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0, c.width, c.height);
-  return c;
-}
-/* ---- 背景ぼかし：KOMA v1.2.0 の softScale / blurBg をそのまま移植（ctx.filter を使わない縮小→拡大方式） ---- */
-const BLUR_LV = {w:8, m:16, s:32};   // 縮小倍率（大きいほど強くぼける）
-const BLUR_NAME = {none:"なし", w:"弱", m:"中", s:"強"};
-function softScale(src, k, ow, oh){
-  const tw = Math.max(2, Math.round(ow / k)), th = Math.max(2, Math.round(oh / k));
-  let cur = src, cw = src.width, ch = src.height;
+const toBlob = (c, q = 0.9) => new Promise(r => c.toBlob(b => r(b), "image/jpeg", q));
+// §6-2（POST）：撮影保存時に自動縮小（長辺1200px・JPEG品質0.75）。100KBを超えたときだけ品質を0.05刻みで0.6まで下げて目標に寄せる
+const SAVE_MAX = 1200, SAVE_Q = 0.75, SAVE_TARGET = 100 * 1024, SAVE_QMIN = 0.6;
+async function compress(file, max = SAVE_MAX){ const bm = await bitmap(file); const s = Math.min(1, max / Math.max(bW(bm), bH(bm))); const c = cv(Math.max(1, Math.round(bW(bm) * s)), Math.max(1, Math.round(bH(bm) * s)));
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0, c.width, c.height);
+  let q = SAVE_Q, b = await toBlob(c, q); while (b && b.size > SAVE_TARGET && q > SAVE_QMIN + 1e-9){ q = Math.round((q - 0.05) * 100) / 100; b = await toBlob(c, q); } return b; }
+function autoLevel(c){ const x = c.getContext("2d"); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; const h = new Uint32Array(256); let n = 0;
+  for (let i = 0; i < a.length; i += 16){ h[(a[i] * .299 + a[i + 1] * .587 + a[i + 2] * .114) | 0]++; n++; }
+  let lo = 0, hi = 255, acc = 0; for (let v = 0; v < 256; v++){ acc += h[v]; if (acc >= n * 0.01){ lo = v; break; } } acc = 0; for (let v = 255; v >= 0; v--){ acc += h[v]; if (acc >= n * 0.01){ hi = v; break; } }
+  if (hi - lo < 16) return; const sc = 255 / (hi - lo); for (let i = 0; i < a.length; i += 4){ for (let k = 0; k < 3; k++){ const v = (a[i + k] - lo) * sc; a[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; } } x.putImageData(d, 0, 0); }
+function cropRect(sw, sh, cr){ cr = cr || {}; const sc = clamp(cr.scale || 1, 1, 4); const side = Math.min(sw, sh) / sc; const cx = sw / 2 + clamp(cr.x || 0, -1, 1) * (sw - side) / 2, cy = sh / 2 + clamp(cr.y || 0, -1, 1) * (sh - side) / 2; return {sx: cx - side / 2, sy: cy - side / 2, side}; }
+async function rotated(orig, rot){ const bm = await bitmap(orig); const w = bW(bm), h = bH(bm), r = ((rot || 0) % 4 + 4) % 4; const sw = r % 2 ? h : w, sh = r % 2 ? w : h;
+  const c = cv(sw, sh); const x = c.getContext("2d"); x.translate(sw / 2, sh / 2); x.rotate(r * Math.PI / 2); x.drawImage(bm, -w / 2, -h / 2); return c; }
+// 適用順は 回転 → 背景ぼかし → 1:1切り抜き → 自動補正
+async function renderEdit(orig, ed, max){ let c = await rotated(orig, ed.rot);
+  if (hasBlur(ed)){ const m = await maskCanvas(ed.blur.mask, ed.rot); if (m) c = blurBg(c, m, ed.blur.lvl); }
+  if (ed.square){ const {sx, sy, side} = cropRect(c.width, c.height, ed.crop); const o = Math.round(max ? Math.min(side, max) : side); const c2 = cv(o, o); c2.getContext("2d").drawImage(c, sx, sy, side, side, 0, 0, o, o); c = c2; }
+  else if (max && Math.max(c.width, c.height) > max){ const k = max / Math.max(c.width, c.height); const c2 = cv(Math.round(c.width * k), Math.round(c.height * k)); c2.getContext("2d").drawImage(c, 0, 0, c2.width, c2.height); c = c2; }
+  if (ed.auto) autoLevel(c); return toBlob(c, max ? 0.8 : 0.9); }
+const BLUR_LV = {w:8, m:16, s:32};
+const BLUR_NAME = {w:"弱", m:"中", s:"強"};
+const toPNG = c => new Promise(r => c.toBlob(b => r(b), "image/png"));
+function rotPt(x, y, r){ r = ((r || 0) % 4 + 4) % 4; return r === 1 ? [1 - y, x] : r === 2 ? [1 - x, 1 - y] : r === 3 ? [y, 1 - x] : [x, y]; }
+function softScale(src, k, ow, oh){ const tw = Math.max(2, Math.round(ow / k)), th = Math.max(2, Math.round(oh / k)); let cur = src, cw = bW(src), ch = bH(src);
   const step = (nw, nh) => { const n = cv(nw, nh); const x = n.getContext("2d"); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(cur, 0, 0, nw, nh); cur = n; cw = nw; ch = nh; };
   while (cw > tw * 2 || ch > th * 2) step(Math.max(tw, Math.round(cw / 2)), Math.max(th, Math.round(ch / 2)));
   step(tw, th);
   while (cw < ow || ch < oh) step(Math.min(ow, cw * 2), Math.min(oh, ch * 2));
-  return cur;
-}
-// 全体をぼかした画像の上に、境界をぼかしたマスクで切り抜いた被写体を重ねる（KOMA と同じ合成）
-function blurBg(c, m, lvl, feather){
-  const w = c.width, h = c.height; const out = softScale(c, BLUR_LV[lvl] || BLUR_LV.m, w, h);
-  const fm = softScale(m, feather || Math.max(2, Math.round(Math.max(w, h) / 400)), w, h);
+  return cur; }
+function blurBg(c, m, lvl){ const w = c.width, h = c.height; const out = softScale(c, BLUR_LV[lvl] || BLUR_LV.m, w, h);
+  const fm = softScale(m, Math.max(2, Math.round(Math.max(w, h) / 400)), w, h);
   const fg = cv(w, h); const x = fg.getContext("2d"); x.drawImage(fm, 0, 0); x.globalCompositeOperation = "source-in"; x.drawImage(c, 0, 0);
-  out.getContext("2d").drawImage(fg, 0, 0); return out;
+  out.getContext("2d").drawImage(fg, 0, 0); return out; }
+async function maskCanvas(id, rot){ const r = await pGet(id).catch(() => null); const b = srcOf(r); if (!b) return null; try { return await rotated(b, rot); } catch (e) { return null; } }
+/* 背景ぼかしの被写体マスク：POST（KOMA）と同じく MediaPipe InteractiveSegmenter を初回だけ遅延ロード（バージョン固定）。
+   アプリ本体は外部ライブラリなしで動き、ぼかしを使うときだけネットから読み込む（CSP でこの置き場所だけ許可。データは送らない） */
+const MP_VER = "0.10.14";
+const MP_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
+const MP_MODEL = "https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite";
+const SEG_MAX = 1024;
+let SEGP = null, SEGOK = false;
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+function loadSeg(){ if (SEGP) return SEGP;
+  if (navigator.onLine === false) return Promise.reject(new Error("offline"));
+  SEGP = withTimeout((async () => { const v = await import(MP_BASE + "/vision_bundle.mjs"); const fs = await v.FilesetResolver.forVisionTasks(MP_BASE + "/wasm");
+    const seg = await v.InteractiveSegmenter.createFromOptions(fs, {baseOptions:{modelAssetPath:MP_MODEL, delegate:"CPU"}, outputCategoryMask:true, outputConfidenceMasks:true}); SEGOK = true; return seg; })(), 90000);
+  SEGP.catch(() => { SEGP = null; }); return SEGP; }
+function readMasks(res){ const o = {conf:[], cat:null}; if (!res) return o;
+  try { for (const m of res.confidenceMasks || []) o.conf.push({w:m.width, h:m.height, d:Float32Array.from(m.getAsFloat32Array())}); } catch (e) { o.conf = []; }
+  try { const m = res.categoryMask; if (m) o.cat = {w:m.width, h:m.height, d:Uint8Array.from(m.getAsUint8Array())}; } catch (e) {} return o; }
+function maskAlpha(o, x, y){ const win = (w, h, f) => { const cx = clamp(Math.round(x * (w - 1)), 0, w - 1), cy = clamp(Math.round(y * (h - 1)), 0, h - 1); const out = [];
+    for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++){ const px = cx + i, py = cy + j; if (px >= 0 && py >= 0 && px < w && py < h) out.push(f(py * w + px)); } return out; };
+  let w, h, a;
+  if (o.conf && o.conf.length){ w = o.conf[0].w; h = o.conf[0].h; let k = 0, best = -1;
+    o.conf.forEach((m, j) => { const v = win(w, h, i => m.d[i]); const av = v.reduce((s, t) => s + t, 0) / v.length; if (av > best){ best = av; k = j; } });
+    const d = o.conf[k].d, inv = o.conf.length === 1 && best < 0.5; a = new Uint8ClampedArray(w * h);
+    for (let i = 0; i < w * h; i++){ let v = inv ? 1 - d[i] : d[i]; v = clamp((v - 0.3) / 0.4, 0, 1); a[i] = Math.round(v * v * (3 - 2 * v) * 255); } }
+  else if (o.cat){ w = o.cat.w; h = o.cat.h; const d = o.cat.d; const cnt = new Map(); for (const v of win(w, h, i => d[i])) cnt.set(v, (cnt.get(v) || 0) + 1);
+    let fg = 0, bc = -1; cnt.forEach((n, v) => { if (n > bc){ bc = n; fg = v; } }); a = new Uint8ClampedArray(w * h); for (let i = 0; i < w * h; i++) a[i] = d[i] === fg ? 255 : 0; }
+  else return null;
+  let sum = 0; for (let i = 0; i < a.length; i++) sum += a[i]; return {w, h, a, ratio: sum / (255 * a.length)}; }
+async function makeMask(seg, src, x, y){ const bm = await bitmap(src); const s = Math.min(1, SEG_MAX / Math.max(bW(bm), bH(bm)));
+  const c = cv(Math.max(1, Math.round(bW(bm) * s)), Math.max(1, Math.round(bH(bm) * s))); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+  let got = null; const ret = seg.segment(c, {keypoint:{x, y}}, res => { got = readMasks(res); });
+  if (!got && ret){ got = readMasks(ret); try { ret.close(); } catch (e) {} }
+  const m = got && maskAlpha(got, x, y); if (!m) throw new Error("マスクが返りませんでした");
+  const mc = cv(m.w, m.h); const mx = mc.getContext("2d"); const id = mx.createImageData(m.w, m.h);
+  for (let i = 0; i < m.a.length; i++){ id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = 255; id.data[i * 4 + 3] = m.a[i]; } mx.putImageData(id, 0, 0);
+  return {blob: await toPNG(mc), ratio: m.ratio}; }
+// カバー文字入れ：POST と同じ黄色バナー（書き出す画像の中にだけ描く。画面の色ではない）
+async function withBanner(blob, text){ const bm = await bitmap(blob); const c = cv(bW(bm), bH(bm)); const x = c.getContext("2d"); x.drawImage(bm, 0, 0);
+  const L = bannerLayout(x, c.width, text);
+  x.fillStyle = "#ffe100"; x.fillRect(0, 0, c.width, L.bh);
+  x.save(); x.beginPath(); x.rect(0, 0, c.width, L.bh); x.clip();
+  x.font = L.font; x.fillStyle = "#111"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, c.width / 2, L.bh / 2 + L.fs * 0.04); x.restore(); return toBlob(c, 0.92); }
+const BN_FONT = n => `900 ${n}px "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif`;
+function bannerLayout(x, w, text){ const base = Math.round(w * 0.065), bh = Math.round(base * 1.75), pad = Math.round(w * 0.04), avail = w - pad * 2, min = Math.max(10, Math.round(base * 0.5));
+  let fs = base; x.font = BN_FONT(fs); while (fs > min && x.measureText(text).width > avail){ fs--; x.font = BN_FONT(fs); }
+  return {bh, pad, fs, font: BN_FONT(fs), fits: x.measureText(text).width <= avail, shrunk: fs < base}; }
+function bannerFits(text){ if (!text) return true; const c = cv(1200, 10); const x = c.getContext && c.getContext("2d"); if (!x) return true; return bannerLayout(x, 1200, text).fits; }
+async function collage(blobs, n){ const SZ = 1200, cell = SZ / n, g = 6; const c = cv(SZ, SZ); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, SZ, SZ);
+  for (let i = 0; i < blobs.length && i < n * n; i++){ const bm = await bitmap(blobs[i]); const w = bW(bm), h = bH(bm), inner = cell - g * 2; const s = Math.max(inner / w, inner / h); const sw = inner / s, sh = inner / s;
+    x.drawImage(bm, (w - sw) / 2, (h - sh) / 2, sw, sh, (i % n) * cell + g, Math.floor(i / n) * cell + g, inner, inner); }
+  return toBlob(c, SAVE_Q); }
+
+/* ---- アイテムとの対応（セラー側） ---- */
+// POST の guessFlags（タイトルから区分・初版・帯・特典を推定）。POST の work/sub/商品名欄 → セラーの商品名
+function guessFlags(it){ const t = [itemTitle(it)].join(" ").normalize("NFKC");
+  const o = {setk: mapSetk(/全巻|全\d+巻/.test(t) ? "全巻" : /\d+\s*[-〜~]\s*\d+\s*巻|セット/.test(t) ? "途中" : "単品"), shoban:"none", obi:"none", bonus:false, condBad:false};
+  if (/一部初版|初版一部|初版あり/.test(t)) o.shoban = "part"; else if (/初版/.test(t)) o.shoban = "all";
+  if (/帯なし/.test(t)) o.obi = "none"; else if (/一部帯|帯一部|帯あり/.test(t)) o.obi = "part"; else if (/帯/.test(t)) o.obi = "all";
+  if (/特典|付録|クリアファイル|ポストカード/.test(t)) o.bonus = true; return o; }
+const itemTitle = p => { const it = p && p._it; return (it ? String(it.name || "").trim() : "") || "（無題）"; };
+// 撮影データ ph の正規化（POST の sanitizeItem / fixItem の撮影部分）。バックアップ由来の値もここで型を絞る
+function phFix(it){
+  const sn = (v, m = 200) => v == null ? "" : String(v).slice(0, m);
+  let p = isPlainObj(it.ph) ? it.ph : null;
+  if (!p){
+    p = {}; const tmp = {_it: it}; const g = guessFlags(tmp); Object.assign(p, g);
+    p.shots = canon(p).map(k => mkShot(k, true));
+    // v1.2.0 以前に付けた写真は、撮影リストの先頭に「以前の写真」枠として残す（先頭＝これまでのメイン画像のまま）
+    const old = itemPhotos(it);
+    p.shots.unshift(...old.map((id, i) => ({key:"old_" + i, label:`以前の写真 ${i + 1}`, required:false, imgId:id, cover:false, custom:true, legacy:true, edit:{}, base:{}})));
+    it.ph = p;
+  }
+  if (!SETK.includes(p.setk)) p.setk = "単品"; p.shoban = tri(p.shoban); p.obi = tri(p.obi); p.bonus = !!p.bonus; p.condBad = !!p.condBad;
+  if (!Array.isArray(p.shots)) p.shots = canon(p).map(k => mkShot(k, true));
+  p.shots = p.shots.filter(x => isPlainObj(x)).map(x => Object.assign(x, {key: sn(x.key, 60), label: sn(x.label, 60), imgId: x.imgId ? sn(x.imgId, 80) : null, edit: isPlainObj(x.edit) ? x.edit : {}, base: isPlainObj(x.base) ? x.base : {}}));
+  for (const k of MEMO_KEYS) if (typeof p[k] !== "string") p[k] = "";
+  if (!isPlainObj(p.banner)) p.banner = {on:false, text:""}; p.banner = {on: !!p.banner.on, text: sn(p.banner.text, 200)};
+  p.extPhotos = !!p.extPhotos;
+  Object.defineProperty(p, "_it", {value: it, enumerable: false, configurable: true, writable: true});
+  if (!p.shots.length) p.shots = canon(p).map(k => mkShot(k, true));
+  p.shots.forEach((s, i) => { s.cover = i === 0; }); const req = p.shots.filter(s => s.required); p.shotStatus = req.length && req.every(s => s.imgId) ? "撮影完了" : "撮影中";
+  return p;
 }
-// 被写体マスク：KOMA は MediaPipe（外部CDN）で被写体を切り抜くが、セラーは外部ライブラリ・通信なしの方針のため、
-// 画面中央の角丸長方形を被写体とみなす簡易マスクで代用する（要判断事項）。境界は広めにぼかす
-function centerMask(w, h){
-  const m = cv(w, h), x = m.getContext("2d");
-  const mw = w * 0.78, mh = h * 0.82, r = Math.min(mw, mh) * 0.08, l = (w - mw) / 2, t = (h - mh) / 2;
-  x.fillStyle = "#fff"; x.beginPath();
-  x.moveTo(l + r, t); x.lineTo(l + mw - r, t); x.quadraticCurveTo(l + mw, t, l + mw, t + r); x.lineTo(l + mw, t + mh - r); x.quadraticCurveTo(l + mw, t + mh, l + mw - r, t + mh);
-  x.lineTo(l + r, t + mh); x.quadraticCurveTo(l, t + mh, l, t + mh - r); x.lineTo(l, t + r); x.quadraticCurveTo(l, t, l + r, t); x.fill();
-  return m;
+function phOf(it){ if (!it) return null; if (isPlainObj(it.ph) && it.ph._it === it) return it.ph; return phFix(it); }
+// 表示だけのときは、撮影データの無い品にまだ ph を付けない（開いただけでデータを変えない）。撮る・切り替えるなど操作した時点で phOf で付ける
+function phPeek(it){ if (!it) return null; if (isPlainObj(it.ph)) return phOf(it); const p = phFix({name: it.name, photos: itemPhotos(it).slice(), thumb: it.thumb, id: it.id}); Object.defineProperty(p, "_it", {value: it, enumerable: false, configurable: true, writable: true}); return p; }
+const peekItem = () => { const it = S.items.find(i => String(i.id) === String(PUI.iid)); return it ? phPeek(it) : null; };
+// items[].photos／thumb を撮影リストの並びから作り直す（1枚目＝カバー＝一覧のサムネイル）
+function phSync(p){ const it = p && p._it; if (!it) return; const ids = p.shots.filter(s => s.imgId).map(s => s.imgId); it.photos = ids; it.thumb = ids[0] || ""; }
+function photosReady(p){ if (p.extPhotos) return true; return p.shotStatus === "撮影完了"; }
+// 在庫グリッドの撮影進捗（POST の「必須 n/m」「未撮影」に倣う）。撮影データの無い品は保存せずに推定だけする
+function phBadge(it){
+  if (isPlainObj(it.ph) && Array.isArray(it.ph.shots)){ const p = phOf(it); if (p.extPhotos) return "写真は用意済み"; if (photosReady(p)) return "準備OK"; const r = progress(p); return `撮影 ${r.done}/${r.all}`; }
+  const g = guessFlags({_it: it}); return `撮影 0/${reqKeys(g).length}`;
 }
-function finishPhoto(c, lvl){
-  if (lvl && lvl !== "none") c = blurBg(c, centerMask(c.width, c.height), lvl, Math.max(2, Math.round(Math.max(c.width, c.height) / 40)));
-  return c.toDataURL("image/jpeg", 0.85);
-}
-async function fileToPhoto(file, lvl){ const im = await loadImg(file); return finishPhoto(fitCanvas(im, im.naturalWidth || im.width, im.naturalHeight || im.height, PHOTO_MAX), lvl); }
-function frameToPhoto(video, lvl){ return finishPhoto(fitCanvas(video, video.videoWidth, video.videoHeight, PHOTO_MAX), lvl); }
 
 /* ---------- 画面 ---------- */
 const UI = {tab:"analysis", month:null, salesQ:"", masterF:"stock", tool:"tpl", tq:"", tcat:"all", revOpen:false, setOpen:false, selMode:false, sel:{}};
@@ -513,7 +804,7 @@ function renderAnalysis(){
   </div>
   <div class="card">
     <h2>月別推移（直近6か月）</h2>
-    <div class="legend">${CHART_KEYS.map(([k, col, w, dash, lab]) => `<span><svg viewBox="0 0 22 8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="${col}" stroke-width="${w}" stroke-dasharray="${dash}"/></svg>${lab}</span>`).join("")}</div>
+    <div class="legend" id="chartLegend">${CHART_KEYS.map(([k, col, w, lab]) => `<span data-k="${k}"><i class="sw" style="background:${col}" aria-hidden="true"></i>${lab}</span>`).join("")}</div>
     ${chartSVG(months, series)}
     <div id="chartTip">グラフをタップすると月の値を表示します</div>
   </div>
@@ -524,8 +815,9 @@ function renderAnalysis(){
     </table>
     <div class="muted" style="margin-top:6px">仕入れ済み ${v.by.stock}／出品中 ${v.by.listed}／取引中 ${v.by.deal}。束ねた単巻はセット・まとめ売りの1件として数えます。</div></div>`; })()}`;
 }
-// モノクロ：色ではなく線の濃さ・太さ・破線で見分ける [キー, 色, 太さ, 破線, 名前]
-const CHART_KEYS = [["sales","#111",2,"","売上"],["cost","#9a9a9a",2,"5 3","コスト"],["profit","#111",3.2,"1.5 3","純利益"]];
+// v1.3.0 §1 色で見分ける（グラフだけの例外。線はすべて実線）[キー, 色, 太さ, 名前]
+// 3色は色覚の型を問わず区別できる組み合わせ（検証ツールで全組の色差 ΔE≥9 を確認）。文字は色を使わず黒・グレーのまま
+const CHART_KEYS = [["sales","#2a78d6",2,"売上"],["cost","#eb6834",2,"コスト"],["profit","#1baf7a",2.5,"純利益"]];
 function chartSVG(months, series){
   const W = 340, H = 190, L = 44, R = 10, T = 10, B = 26;
   const keys = CHART_KEYS;
@@ -542,10 +834,10 @@ function chartSVG(months, series){
     g += `<text x="${L - 4}" y="${y(v) + 3}" text-anchor="end" font-size="9" fill="#8a8a8a">${shortYen(v)}</text>`;
   }
   months.forEach((m, i) => { g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#4d4d4d">${Number(m.slice(5))}月</text>`; });
-  for (const [k, col, sw, dash] of keys){
+  for (const [k, col, sw] of keys){
     const pts = series.map((s, i) => x(i).toFixed(1) + "," + y(s[k]).toFixed(1)).join(" ");
-    g += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}" stroke-linejoin="round" stroke-linecap="round"/>`;
-    series.forEach((s, i) => { g += `<circle cx="${x(i)}" cy="${y(s[k])}" r="${k === "cost" ? 3 : 4}" fill="${k === "profit" ? "#fff" : col}" stroke="${k === "profit" ? "#111" : "#fff"}" stroke-width="2"/>`; });
+    g += `<polyline data-k="${k}" points="${pts}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    series.forEach((s, i) => { g += `<circle data-k="${k}" cx="${x(i)}" cy="${y(s[k])}" r="4" fill="${col}" stroke="#fff" stroke-width="2"/>`; });
   }
   months.forEach((m, i) => {
     const w = (W - L - R) / Math.max(1, months.length - 1);
@@ -659,12 +951,14 @@ function renderMaster(){
   document.getElementById("fab").hidden = sel;
   $view.innerHTML = `
   ${sel ? `<div class="card" style="margin-bottom:10px"><b>束ねる商品を選ぶ</b><div class="muted">仕入れ済みの商品を2件以上タップして選び、下の「束ねる」を押します。同じ作品ならセット、違う作品が混ざればまとめ売りになります。</div></div>`
-    : `<div class="invtop"><button class="btn pri" data-act="regOpen">読み取りで登録</button><button class="btn" data-act="selOn">束ねる（複数選択）</button></div>`}
+    : `<button class="btn pri scanbtn" data-act="regOpen" id="scanEntry">${SCAN_SVG}読み取りで登録（バーコード / ISBN）</button>
+    <div class="invsub">仕入れ登録はこの入口から。手入力での登録もここから選べます</div>
+    <button class="btn wide" data-act="selOn" style="margin-bottom:10px">束ねる（複数選択）</button>`}
   <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}</div>
   <div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
   <div class="grid" id="masterGrid">${rows.map(it => {
     const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock";
-    return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div></div></button>`; }).join("")}</div>
+    return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div>${it.st === "sold" ? "" : `<div class="pp" data-pp>${esc(phBadge(it))}</div>`}</div></button>`; }).join("")}</div>
   ${rows.length ? "" : `<div class="empty-note">該当する商品がありません</div>`}
   ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
   fillThumbs($view);
@@ -763,19 +1057,92 @@ async function unbundleGo(){
   if (!ED) return; const id = ED.id, it = S.items.find(x => x.id === id);
   S.items.forEach(m => { if (m.inSet !== undefined && String(m.inSet) === String(id)) delete m.inSet; });
   if (it && it.autoBundle){
-    for (const k of itemPhotos(it)){ await idbDel("imgs", k); thumbCache.delete(k); }
+    for (const k of itemImgIds(it)){ await idbDel("imgs", k); dropURL(k); }
     S.items = S.items.filter(x => x.id !== id);
   } else if (it){ it.st = "cand"; it.cost = ""; if (Array.isArray(it.hist)) it.hist.push({at: today(), kind: "edit", text: "束ねを解除（候補に戻した）", src: "manual"}); }
   await saveState(); closeModal(); closeEditor(); render(); toast("束ねを解除しました");
 }
 
-/* ---------- §3 読み取りで登録（SSS regOpen / regCode / regAdd と同じ流れ。書誌は取り込み済み biblio のみ・外部通信なし） ---------- */
-// SSS の内蔵 EAN-13 解読（BarcodeDetector の無い iPhone Safari などで使う）をそのまま移植
+/* ---------- v1.3.0 §2 読み取りで登録：SSS 台帳版の regOpen / regParams / regDup / regAdd / regPendShow / regCode と
+   startScan / stopScan / loop / onCode / 内蔵 EAN-13 解読をそのまま移植（画面構成・文言・判定・操作の流れを SSS と同一にする）。
+   セラー側で変えたのは：保存先（セラーの items）、入口の置き場所（在庫タブ）、書誌引き（下記）、色（モノクロ）、絵文字を外したこと。
+   書誌引き：SSS の fetchBiblio は取り込み済み biblio に無いと openBD に問い合わせるが、セラーは外部通信をしない方針のため biblio だけを引く ---------- */
+const BOOK = "本・コミック";
+const catOf = x => String((x && x.cat) || "").trim() || BOOK; const isBook = x => catOf(x) === BOOK;
 function ean13ok(c){ if (!/^\d{13}$/.test(c)) return false; let s = 0; for (let i = 0; i < 12; i++) s += (+c[i]) * (i % 2 ? 3 : 1); return (10 - s % 10) % 10 === +c[12]; }
-function okScanCode(c){ return ean13ok(c) && !/^19[0-9]/.test(c); }   // 書籍の2段目（192…）は無視
-function normCode(v){ const t = String(v ?? "").normalize("NFKC").replace(/[^0-9Xx]/g, "").toUpperCase();
+function isbn10to13(t){ const b = "978" + t.slice(0, 9); let s = 0; for (let i = 0; i < 12; i++) s += (+b[i]) * (i % 2 ? 3 : 1); return b + ((10 - s % 10) % 10); }
+function normCode(v){ let t = String(v ?? "").normalize("NFKC").replace(/[^0-9Xx]/g, "").toUpperCase();
   if (/^\d{9}[\dX]$/.test(t)) return isbn10to13(t);
   if (/^\d{13}$/.test(t) || /^\d{8}$/.test(t)) return t; return t.replace(/X/g, ""); }
+function okScanCode(c){ return ean13ok(c) && !/^19[0-9]/.test(c); }   // 書籍の2段目(192…)は無視
+const isISBN = c => /^97[89]\d{10}$/.test(c);
+// SSS の num（空は NaN。数字以外の文字は無視）。セラーの num は空を0にするので、仕入価格の判定にはこちらを使う
+function sssNum(v){ if (v === null || v === undefined || v === "") return NaN; if (typeof v === "number") return v;
+  const t = String(v).normalize("NFKC").replace(/[,¥￥円\s]/g, ""); const m = t.match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : NaN; }
+const yenT = n => isFinite(n) ? Math.round(n).toLocaleString("ja-JP") + "円" : "—";
+/* 書誌（SSS fetchBiblio の代わり：取り込み済み biblio のキーを ISBN-10/13 の両方で引く。通信しない） */
+function normIsbn(s){ return String(s ?? "").replace(/[^0-9Xx]/g, "").toUpperCase(); }
+function isbn13to10(s){ if (!s.startsWith("978")) return ""; const b = s.slice(3, 12); let t = 0; for (let i = 0; i < 9; i++) t += Number(b[i]) * (10 - i); const c = (11 - t % 11) % 11; return b + (c === 10 ? "X" : String(c)); }
+function lookupBiblio(code){
+  const n = normIsbn(code); if (!n) return null;
+  const cands = [n];
+  if (n.length === 10) cands.push(isbn10to13(n));
+  if (n.length === 13) cands.push(isbn13to10(n));
+  for (const [k, v] of Object.entries(S.biblio)) if (cands.includes(normIsbn(k)) && isPlainObj(v)) return v;
+  return null;
+}
+function biblioToItem(b, code){
+  const pick = (...ks) => { for (const k of ks){ const v = b[k]; if (Array.isArray(v) && v.length) return v.join("、"); if (v !== undefined && v !== null && v !== "") return String(v); } return ""; };
+  return {code: normIsbn(code), name: pick("title","name"), author: pick("author","authors"), pub: pick("pub","publisher"), vols: pick("vols"), cat: pick("cat"), cover: pick("cover")};
+}
+async function fetchBiblio(isbn){
+  const b = lookupBiblio(isbn); if (!b) return {none:true};
+  const o = biblioToItem(b, isbn); if (!o.name) return {none:true};
+  return {title:o.name, author:o.author, pub:o.pub, cover:o.cover};
+}
+/* ---------- 一覧：読み取りで仕入済みに追加（定額で何冊も買うとき用）［SSS と同じ］ ---------- */
+const SCAN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M7 12h10"/></svg>';
+let REG = null;
+// SSS の openSheet（見出し＋「閉じる」）を、セラーの #sheet に SSS の見た目（#sheet.sss）で出す
+function sssOpenSheet(title, html){ const sh = document.getElementById("sheet"); sh.classList.add("sss");
+  sh.innerHTML = `<div class="sh"><h2 id="shT2">${esc(title)}</h2><button class="btn sm" data-act="regClose">閉じる</button></div><div class="sb" id="shB2">${html}</div>`;
+  sh.hidden = false; sh.scrollTop = 0; document.body.style.overflow = "hidden"; }
+function regOpen(){ REG = {log:[], pend:null}; const s = S.settings;
+  sssOpenSheet("読み取りで登録（バーコード / ISBN）", `<div class="note mb2">先に仕入価格（1冊あたり）・仕入日・仕入元を入れてから、バーコードを続けて読み取ってください。読み取るたびに「在庫」として登録します（現行どおり）。</div>
+  <div class="grid3"><div class="fld"><label>仕入価格（単価）</label><input id="rgP" inputmode="numeric" placeholder="110"></div><div class="fld"><label>仕入日</label><input id="rgD" type="date" value="${today()}"></div>
+  <div class="fld"><label>仕入元</label><input id="rgS" list="rgSL" value="${esc(s.store || "")}"><datalist id="rgSL">${(Array.isArray(s.stores) ? s.stores : []).map(x => `<option value="${esc(x)}">`).join("")}</datalist></div></div>
+  <button class="btn pri" style="width:100%" id="regScanBtn" data-act="regScan">読み取り開始</button>
+  <div id="regCam" class="mt2"></div><div id="regPend"></div>
+  <div class="sec">読み取れないとき</div>
+  <div class="row"><input id="rgIsbn" inputmode="numeric" placeholder="ISBNを入力" class="grow inline-in" style="width:auto;text-align:left"><button class="btn sm" data-act="regIsbn">追加</button></div>
+  <div class="row mt2"><input id="rgName" placeholder="商品名を手入力（例：BORUTO 3巻）" class="grow inline-in" style="width:auto;text-align:left"><button class="btn sm" data-act="regManual">追加</button></div>
+  <div class="sec">手入力で登録</div><button class="btn wide" data-act="regForm">詳細フォームで手入力登録（ISBNなし・本以外も）</button>
+  <div class="sec">この画面で登録した本</div><div id="regLog" class="note">まだありません</div>`); }
+// SSS の closeSheet（読み取り中ならカメラを止めて閉じる）＋ A.closeSheet の render()
+function regClose(){ if (Scan.on && Scan.wrapSel === "#regCam") stopScan(); const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; sh.classList.remove("sss"); document.body.style.overflow = ""; REG = null; render(); }
+function regParams(){ const p = sssNum($("#rgP").value); if (!isFinite(p)){ toast("先に仕入価格（単価）を入れてください"); return null; } return {p, d: $("#rgD").value || today(), st: ($("#rgS").value || "").trim()}; }
+function regDup(code, title){ const c = normCode(code), k = workKey(title), v = volOf(title);
+  return S.items.filter(it => (it.st === "stock" || it.st === "listed") && isBook(it) && ((c && normCode(it.code) === c) || (v && keyMatch(k, itemKey(it)) && itemVols(it).has(v)))); }
+function keyMatch(a, b){ if (!a || !b) return false; if (a === b) return true; const s1 = a.length <= b.length ? a : b, l = a.length <= b.length ? b : a; return s1.length >= 3 && l.includes(s1); }
+function itemVols(it){ if (it.have){ const s = parseVols(it.have); if (s.size) return s; } const r = itemRangeOf(it); const out = new Set(); if (r) for (let v = r[0]; v <= r[1]; v++) out.add(v); return out; }
+// SSS の newItem（cat＝本・コミック、履歴「仕入れ登録（原価 n円）」）を、セラーの項目一式（blankItem）の上に作る
+function regNewItem(o){ const c = sssNum(o.cost);
+  return Object.assign(blankItem(), {cat: BOOK, created: new Date().toISOString(),
+    hist: [{at: normDate(o.date) || today(), kind: "reg", text: `${(o.st || "cand") === "cand" ? "候補として登録" : "仕入れ登録"}${isFinite(c) ? `（原価 ${yenT(c)}）` : ""}`, src: "manual"}]}, o); }
+function regAdd(o){ const P = regParams(); if (!P) return false; const it = regNewItem({name: o.title || o.code, code: o.code || "", author: o.author || "", pub: o.pub || "", cover: o.cover || "", st: "stock", cost: P.p, date: P.d, store: P.st});
+  it.hist[0].text += o.code ? `・読み取り（${o.code}）` : "・手入力"; S.items.unshift(it); saveState().catch(e => toast("保存できませんでした: " + (e && e.message || e))); REG.log.unshift(it.name); const l = $("#regLog"); if (l) l.innerHTML = REG.log.map(n => `✓ ${esc(n)}`).join("<br>"); toast(`登録：${it.name}`); return true; }
+function regPendShow(){ const e = $("#regPend"); if (!e) return; const P = REG && REG.pend; if (!P){ e.innerHTML = ""; return; }
+  if (P.nobib) e.innerHTML = `<div class="banner mt2" id="regPendBox" style="flex-wrap:wrap">書誌が見つかりませんでした（${esc(P.code)}）。商品名を入れて登録できます。<input id="rgPendName" class="inline-in" style="width:100%;text-align:left" placeholder="商品名"><button data-act="regPendManual">この名前で登録</button><button data-act="regPendSkip">スキップ</button></div>`;
+  else e.innerHTML = `<div class="banner mt2" id="regPendBox" style="flex-wrap:wrap">同じ巻がすでに在庫にあります：${esc(P.dups.map(d => d.name).join("、"))}<br>読み取った本：${esc(P.title)}<button data-act="regPendOk">それでも登録</button><button data-act="regPendSkip">スキップ</button></div>`; }
+async function regCode(raw){ if (!REG || REG.pend) return; if (!regParams()) return; const code = normCode(raw);
+  let b = S.biblio[code]; if (!b || !b.title) b = await fetchBiblio(code); if (!REG) return;
+  if (!b || !b.title){ REG.pend = {code, nobib:true}; regPendShow(); return; }
+  const o = {code, title: b.title, author: b.author, pub: b.pub, cover: b.cover}; const d = regDup(code, b.title);
+  if (d.length){ REG.pend = Object.assign(o, {dups: d}); regPendShow(); return; } regAdd(o); }
+
+/* ============================================================
+   バーコード読み取り（BarcodeDetector があれば使い、なければ内蔵のEAN-13解読）［SSS と同じ］
+   ============================================================ */
 const LP = [[3,2,1,1],[2,2,2,1],[2,1,2,2],[1,4,1,1],[1,1,3,2],[1,2,3,1],[1,1,1,4],[1,3,1,2],[1,2,1,3],[3,1,1,2]];
 const GP = LP.map(p => p.slice().reverse());
 const PAR = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
@@ -803,149 +1170,59 @@ function decodeRow(L){
     i => { const a = Math.max(0, i - W), b = Math.min(n, i + W); return Math.min((pre[b] - pre[a]) / (b - a), gmid + (mx - mn) * 0.25); }];
   for (const T of thr){
     const bits = new Uint8Array(n); for (let i = 0; i < n; i++) bits[i] = L[i] < T(i) ? 1 : 0;
-    const R = [], Cc = []; let c = bits[0], len = 0; for (let i = 0; i < n; i++){ if (bits[i] === c) len++; else { R.push(len); Cc.push(c); c = bits[i]; len = 1; } } R.push(len); Cc.push(c);
-    for (let s = 0; s + 59 <= R.length; s++){ if (Cc[s] !== 1) continue; const r = tryEAN(R, s); if (r) return r; }
+    const R = [], C = []; let c = bits[0], len = 0; for (let i = 0; i < n; i++){ if (bits[i] === c) len++; else { R.push(len); C.push(c); c = bits[i]; len = 1; } } R.push(len); C.push(c);
+    for (let s = 0; s + 59 <= R.length; s++){ if (C[s] !== 1) continue; const r = tryEAN(R, s); if (r) return r; }
   }
   return null;
 }
+const scv = document.createElement("canvas"); let scx = null;
 function decodeImageData(img, W, H){
   for (let k = 1; k < 16; k++){ const y = Math.round(H * k / 16); const L = new Float32Array(W);
     for (let x = 0; x < W; x++){ let s = 0; for (const dy of [-1, 0, 1]){ const yy = Math.min(H - 1, Math.max(0, y + dy)); const i = (yy * W + x) * 4; s += img[i] * .299 + img[i + 1] * .587 + img[i + 2] * .114; } L[x] = s / 3; }
     let r = decodeRow(L); if (!r) r = decodeRow(L.slice().reverse()); if (r && okScanCode(r)) return r; }
   return null;
 }
-let scanCv = null, scanCx = null;
 function decodeFrame(v){
   const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const W = Math.min(1000, vw), sc = W / vw, H = Math.round(vh * 0.5 * sc);
-  scanCv = scanCv || document.createElement("canvas"); scanCv.width = W; scanCv.height = H; scanCx = scanCx || scanCv.getContext("2d", {willReadFrequently: true});
-  scanCx.drawImage(v, 0, vh * 0.25, vw, vh * 0.5, 0, 0, W, H);
-  return decodeImageData(scanCx.getImageData(0, 0, W, H).data, W, H);
+  scv.width = W; scv.height = H; scx = scx || scv.getContext("2d", {willReadFrequently: true}); scx.drawImage(v, 0, vh * 0.25, vw, vh * 0.5, 0, 0, W, H);
+  return decodeImageData(scx.getImageData(0, 0, W, H).data, W, H);
 }
-// 連続読み取り（SSS と同じ：BarcodeDetector があれば使い、無ければ内蔵解読。内蔵解読は同じ値が2回続いたら採用。同じ値は3秒間無視）
-const Scan = {on:false, det:null, last:"", lastT:0, cand:"", candN:0, timer:null, ac:null, box:null, handler:null, mode:""};
+const Scan = {on:false, stream:null, det:null, last:"", lastT:0, cand:"", candN:0, timer:null, ac:null, wrapSel:"#camWrap", handler:null};
 function beep(){ try { Scan.ac = Scan.ac || new (window.AudioContext || window.webkitAudioContext)(); const o = Scan.ac.createOscillator(), g = Scan.ac.createGain(); o.frequency.value = 1800; g.gain.value = .08; o.connect(g); g.connect(Scan.ac.destination); o.start(); o.stop(Scan.ac.currentTime + .08); } catch (e) {} }
-const canCamera = () => !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function");
-async function scanStart(box, handler){
-  if (Scan.on || !box) return false;
-  if (!canCamera()){ toast("この環境ではカメラを使えません。ISBNを入力してください"); return false; }
-  Scan.box = box; Scan.handler = handler;
+async function startScan(wrapSel, handler){
+  if (Scan.on) return; Scan.wrapSel = wrapSel || "#camWrap"; Scan.handler = handler || null;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast("この環境ではカメラを使えません。ISBNを入力してください"); return; }
   try { Scan.ac = Scan.ac || new (window.AudioContext || window.webkitAudioContext)(); Scan.ac.resume && Scan.ac.resume(); } catch (e) {}
-  box.innerHTML = `<div class="scanbox" id="scanBox"><video playsinline muted autoplay></video><div class="guide"></div><div class="hint">バーコードを白線に合わせてください（連続読み取り中）</div></div>`;
-  const video = box.querySelector("video");
-  try { scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}, audio:false}); }
-  catch (e) { box.innerHTML = ""; toast("カメラを起動できません（" + (e && e.name || "エラー") + "）。ISBNを入力してください"); return false; }
-  if (Scan.box !== box || !document.body.contains(box)){ stopScan(); return false; }
-  video.srcObject = scanStream; try { await video.play(); } catch (e) {}
-  Scan.det = null; Scan.mode = "内蔵の解読";
-  if (typeof window.BarcodeDetector === "function"){ try { const f = window.BarcodeDetector.getSupportedFormats ? await window.BarcodeDetector.getSupportedFormats() : ["ean_13"]; if (f.includes("ean_13")){ Scan.det = new window.BarcodeDetector({formats:["ean_13"]}); Scan.mode = "BarcodeDetector"; } } catch (e) {} }
-  Scan.on = true; Scan.cand = ""; Scan.candN = 0; scanLoop(video);
-  return true;
+  const w = $(Scan.wrapSel); if (!w) return; w.innerHTML = `<div id="cam"><video playsinline muted autoplay></video><div class="guide"></div><div class="hint">バーコードを白線に合わせて横向きに（連続読み取り中）</div></div>`;
+  const video = w.querySelector("video");
+  try { Scan.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}, audio:false}); }
+  catch (e) { w.innerHTML = ""; toast("カメラを起動できません（" + e.name + "）。設定でカメラを許可するか、ISBNを入力してください"); return; }
+  video.srcObject = Scan.stream; try { await video.play(); } catch (e) {}
+  Scan.det = null;
+  if ("BarcodeDetector" in window){ try { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("ean_13")) Scan.det = new BarcodeDetector({formats:["ean_13"]}); } catch (e) {} }
+  Scan.on = true; loop(video);
 }
-async function scanLoop(video){
+function stopScan(){ Scan.on = false; clearTimeout(Scan.timer); if (Scan.stream){ Scan.stream.getTracks().forEach(t => t.stop()); Scan.stream = null; } const w = $(Scan.wrapSel || "#camWrap"); if (w) w.innerHTML = ""; const rb = $("#regScanBtn"); if (rb) rb.textContent = "読み取り開始"; }
+async function loop(video){
   if (!Scan.on) return; let code = null;
   try { if (Scan.det){ const r = await Scan.det.detect(video); for (const b of r){ if (okScanCode(b.rawValue)){ code = b.rawValue; break; } } } else code = decodeFrame(video); } catch (e) {}
-  if (!Scan.on) return;
-  if (code) scanHit(code);
-  Scan.timer = setTimeout(() => scanLoop(video), Scan.det ? 150 : 80);
+  if (code) onCode(code); Scan.timer = setTimeout(() => loop(video), Scan.det ? 150 : 80);
 }
-function scanHit(code){
+function onCode(code){
   if (!Scan.det){ if (code === Scan.cand) Scan.candN++; else { Scan.cand = code; Scan.candN = 1; } if (Scan.candN < 2) return; }
   const t = Date.now(); if (code === Scan.last && t - Scan.lastT < 3000) return; Scan.last = code; Scan.lastT = t;
-  beep(); const b = document.getElementById("scanBox"); if (b){ b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 350); }
+  beep(); const c = $("#cam"); if (c){ c.classList.add("hit"); setTimeout(() => c.classList.remove("hit"), 350); }
   if (Scan.handler) Scan.handler(code);
 }
-let REG = null;
-function regOpen(){
-  REG = {log:[], pend:null, chips:[]};
-  const sh = document.getElementById("sheet");
-  sh.innerHTML = `<div class="sh"><button class="xbtn" data-act="regClose" aria-label="閉じる">×</button><b>読み取りで登録</b></div>
-  <div class="body" id="regForm">
-    <div class="card"><div class="muted" style="margin-bottom:8px">先に仕入額（1冊あたり）・仕入日・状態を入れてから、バーコードを続けて読み取ってください。読み取るたびに「仕入れ済み」として登録します。</div>
-      <div class="f2"><div class="f"><label>仕入額（1冊あたり）</label><input id="rgP" inputmode="numeric" placeholder="110" autocomplete="off"></div><div class="f"><label>仕入日</label><input id="rgD" type="date" value="${today()}"></div></div>
-      <div class="f"><label>状態チップ（登録する全件に付けます）</label><div class="chips" id="rgChips" style="margin:0">${COND_CHIPS.map(c => `<button type="button" class="chip" data-act="rgChip" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
-      ${canCamera() ? `<button class="btn pri wide" id="regScanBtn" data-act="regScan">読み取り開始</button>` : `<div class="muted" id="regNoCam">この環境ではカメラが使えません。下の欄にISBNを入力してください。</div>`}
-      <div id="regCam"></div><div id="regPend"></div></div>
-    <div class="card"><div class="sec">読み取れないとき</div>
-      <div class="inrow"><input id="rgIsbn" inputmode="numeric" placeholder="ISBNを入力（10桁・13桁）" autocomplete="off" enterkeyhint="done"><button class="btn" data-act="regIsbn">追加</button></div>
-      <div class="inrow"><input id="rgName" placeholder="商品名を手入力（例：鋼の錬金術師 3巻）" autocomplete="off" enterkeyhint="done"><button class="btn" data-act="regManual">追加</button></div>
-      <button class="btn wide" data-act="regForm">詳細フォームで手入力登録（ISBNなし・本以外も）</button></div>
-    <div class="card"><div class="sec">この画面で登録した商品</div><div id="regLog" class="reglog">まだありません</div></div>
-  </div>`;
-  sh.hidden = false; sh.scrollTop = 0; document.body.style.overflow = "hidden";
-}
-function regClose(){ stopScan(); REG = null; const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; document.body.style.overflow = ""; render(); }
-function regParams(){
-  const raw = (document.getElementById("rgP") || {}).value;
-  if (raw === undefined || String(raw).trim() === "" || !Number.isFinite(cnum(raw)) || cnum(raw) < 0){ toast("先に仕入額（1冊あたり）を入れてください"); return null; }
-  return {p: cnum(raw), d: normDate((document.getElementById("rgD") || {}).value) || today(), chips: REG ? REG.chips.slice() : []};
-}
-// 重複の注意（SSS regDup と同じ：仕入れ済み・出品中で、同じコード、または同じ作品の同じ巻）
-function regDup(code, title){ const c = normCode(code), k = workKey(title), v = volOf(title);
-  return S.items.filter(it => (it.st === "stock" || it.st === "listed") && ((c && normCode(it.code) === c) || (v && keyMatch(k, itemKey(it)) && itemVols(it).has(v)))); }
-function keyMatch(a, b){ if (!a || !b) return false; if (a === b) return true; const s1 = a.length <= b.length ? a : b, l = a.length <= b.length ? b : a; return s1.length >= 3 && l.includes(s1); }
-function itemVols(it){ if (it.have){ const s = parseVols(it.have); if (s.size) return s; } const r = itemRangeOf(it); const out = new Set(); if (r) for (let v = r[0]; v <= r[1]; v++) out.add(v); return out; }
-async function regAdd(o){
-  const P = regParams(); if (!P) return false;
-  const b = o.b ? biblioToItem(o.b, o.code) : {};
-  const it = Object.assign(blankItem(), {author: b.author || "", pub: b.pub || "", vols: b.vols || "", cat: b.cat || ""},
-    {name: o.title || o.code, code: o.code || "", st: "stock", cost: P.p, date: P.d, condChips: P.chips, created: new Date().toISOString()});
-  it.hist = [{at: P.d, kind: "reg", text: `仕入れ登録（原価 ${yen(P.p)}）` + (o.code ? `・読み取り（${o.code}）` : "・手入力"), src: "manual"}];
-  S.items.unshift(it);
-  await saveState();
-  if (REG){ REG.log.unshift(it.name); const l = document.getElementById("regLog"); if (l) l.innerHTML = REG.log.map(n => `<div>登録：${esc(n)}</div>`).join(""); }
-  toast("登録：" + it.name);
-  return it.id;
-}
-function regPendShow(){
-  const e = document.getElementById("regPend"); if (!e) return; const P = REG && REG.pend;
-  if (!P){ e.innerHTML = ""; return; }
-  if (P.nobib) e.innerHTML = `<div class="pend" id="regPendBox"><b>書誌が見つかりませんでした（${esc(P.code)}）</b><div class="muted" style="margin:4px 0 8px">取り込み済みの書誌にありません。商品名を入れて登録できます。</div>
-    <div class="f"><input id="rgPendName" placeholder="商品名" autocomplete="off"></div><div class="row"><button class="btn" data-act="regPendSkip">スキップ</button><button class="btn pri grow" data-act="regPendManual">この名前で登録</button></div></div>`;
-  else e.innerHTML = `<div class="pend" id="regPendBox"><b>同じ巻がすでに在庫にあります</b><div class="muted" style="margin:4px 0 8px">${esc(P.dups.map(d => d.name).join("、"))}<br>読み取った本：${esc(P.title)}</div>
-    <div class="row"><button class="btn" data-act="regPendSkip">スキップ</button><button class="btn pri grow" data-act="regPendOk">それでも登録</button></div></div>`;
-}
-async function regCode(raw){
-  if (!REG || REG.pend) return null; if (!regParams()) return null;
-  const code = normCode(raw), b = lookupBiblio(code), title = b ? biblioToItem(b, code).name : "";
-  if (!b || !title){ REG.pend = {code, nobib:true}; regPendShow(); return "nobib"; }
-  const o = {code, title, b}, d = regDup(code, title);
-  if (d.length){ REG.pend = Object.assign(o, {dups:d}); regPendShow(); return "dup"; }
-  return regAdd(o);
-}
+window.addEventListener("pagehide", () => stopScan());
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopScan(); });
 
-/* 新規登録（バーコード／ISBN手入力） */
-function normIsbn(s){ return String(s ?? "").replace(/[^0-9Xx]/g, "").toUpperCase(); }
-function isbn10to13(s){ const b = "978" + s.slice(0, 9); let t = 0; for (let i = 0; i < 12; i++) t += Number(b[i]) * (i % 2 ? 3 : 1); return b + ((10 - t % 10) % 10); }
-function isbn13to10(s){ if (!s.startsWith("978")) return ""; const b = s.slice(3, 12); let t = 0; for (let i = 0; i < 9; i++) t += Number(b[i]) * (10 - i); const c = (11 - t % 11) % 11; return b + (c === 10 ? "X" : String(c)); }
-function lookupBiblio(code){
-  const n = normIsbn(code); if (!n) return null;
-  const cands = [n];
-  if (n.length === 10) cands.push(isbn10to13(n));
-  if (n.length === 13) cands.push(isbn13to10(n));
-  for (const [k, v] of Object.entries(S.biblio)) if (cands.includes(normIsbn(k)) && isPlainObj(v)) return v;
-  return null;
-}
-function biblioToItem(b, code){
-  const pick = (...ks) => { for (const k of ks){ const v = b[k]; if (Array.isArray(v) && v.length) return v.join("、"); if (v !== undefined && v !== null && v !== "") return String(v); } return ""; };
-  return {code: normIsbn(code), name: pick("title","name"), author: pick("author","authors"), pub: pick("pub","publisher"), vols: pick("vols"), cat: pick("cat")};
-}
-let scanStream = null;
-function stopScan(){
-  Scan.on = false; clearTimeout(Scan.timer); Scan.handler = null;
-  if (scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  if (Scan.box){ Scan.box.innerHTML = ""; Scan.box = null; }
-  const rb = document.getElementById("regScanBtn"); if (rb) rb.textContent = "読み取り開始";
-}
+/* 新規登録（＋）：ISBN 手入力で書誌補完／書誌なしで手入力。v1.3.0 で読み取り（カメラ）は「読み取りで登録」（SSS と同じ画面）に一本化 */
 function openNew(){
-  // v1.2.0：BarcodeDetector が無い環境（iPhone Safari など）でも、カメラが使えれば内蔵の EAN-13 解読で読み取る（SSS と同じ）
-  const canScan = canCamera();
   showModal(`<h3>新規登録</h3>
-    ${canScan ? `<button class="btn pri" style="width:100%;margin-bottom:10px" data-act="scan">バーコードを読み取る</button><div id="scanWrap"></div>` : `<div class="muted" style="margin-bottom:8px">この環境ではバーコード読み取りが使えません。ISBNを手入力してください。</div>`}
+    <div class="muted" style="margin-bottom:8px">バーコードの読み取りは、在庫タブの「読み取りで登録（バーコード / ISBN）」から行います。</div>
     <div class="f"><label>ISBN（手入力）</label><input id="isbnIn" inputmode="numeric" autocomplete="off" placeholder="978…"></div>
     <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn" data-act="manual">書誌なしで手入力</button><button class="btn pri" data-act="isbnGo">ISBNで登録</button></div>`);
-}
-function startScan(){
-  scanStart(document.getElementById("scanWrap"), code => { stopScan(); const i = document.getElementById("isbnIn"); if (i){ i.value = code; isbnGo(); } });
 }
 function isbnGo(){
   const code = normIsbn(document.getElementById("isbnIn").value);
@@ -968,7 +1245,11 @@ function openEditor(id, preset){
   if (id){ const it = S.items.find(i => i.id === id); if (!it) return; draft = JSON.parse(JSON.stringify(it)); }
   else draft = Object.assign(blankItem(), preset || {});
   if (!Array.isArray(draft.condChips)) draft.condChips = [];
-  ED = {id:draft.id, isNew, draft, photos: itemPhotos(draft).map(id => ({id, data:null}))};
+  ED = {id:draft.id, isNew, draft};
+  // v1.3.0 §3 写真は保存済みのアイテム（S.items）の撮影データ ph を直接操作する（POST と同じく撮るたびに保存）
+  const live = isNew ? null : S.items.find(i => i.id === id);
+  const phv = live ? phPeek(live) : null;
+  if (live){ PUI.iid = live.id; PUI.from = "editor"; PUI.view = null; }
   const d = draft, set = S.settings;
   const rate = feeRateOf(d);
   const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? "selected" : ""}>${esc(l)}</option>`;
@@ -981,7 +1262,7 @@ function openEditor(id, preset){
       <div class="muted" style="margin:6px 0 8px">仕入額の合計 ${yen(mem.reduce((s, m) => s + num(m.cost), 0))}。中身は在庫一覧・集計に出ず、この商品の金額だけを数えます。</div>
       <button class="btn wide" data-act="unbundle">束ねを解除</button></div>`
     : parent ? `<div class="card" id="edBundle"><div class="sec">所属</div><div>「${esc(parent.name || "（名称未設定）")}」に束ねられています。在庫一覧・集計には出ません。</div></div>` : "";
-  const sh = document.getElementById("sheet");
+  const sh = document.getElementById("sheet"); sh.classList.remove("sss");
   sh.innerHTML = `
   <div class="sh"><button class="xbtn" data-act="edClose" aria-label="閉じる（保存しない）">×</button><b>${isNew ? "新規登録" : "編集"}</b></div>
   <div class="body" id="edForm">
@@ -990,10 +1271,7 @@ function openEditor(id, preset){
       <div class="f"><select name="kind">${Object.entries(KINDS).map(([k, l]) => opt(k, l, d.kind || "sale")).join("")}</select></div></div>
     <div class="card"><div class="sec">2. 商品マスタ紐付け</div>
       <div class="f"><select name="masterId">${opt("", "未選択", d.masterId || "")}${S.items.filter(i => i.id !== d.id).map(i => opt(i.id, (i.name || "（名称未設定）") + "［" + (ST_LABEL[i.st] || i.st || "") + "］", d.masterId || "")).join("")}</select></div></div>
-    <div class="card"><div class="sec">3. 商品画像</div>
-      <div class="pgrid" id="edPhotos"></div>
-      <div class="row wrap"><button class="btn sm pri" data-act="camOpen">カメラで撮影</button><button class="btn sm" data-act="photoLib">ライブラリから追加</button></div>
-      <div class="muted" style="margin-top:6px">先頭の写真がメイン画像（一覧のサムネイル）になります。←→で並び替え、写真をタップで拡大。保存するまで確定しません。</div></div>
+    <div class="card pst" id="edPh">${edPhotoInner(phv, isNew)}</div>
     <div class="card"><div class="sec">4. 商品とステータス</div>
       <div class="f"><label>商品名</label><input name="name" value="${esc(d.name)}"></div>
       <div class="f2"><div class="f"><label>種類（カテゴリ）</label><input name="cat" list="catList" value="${esc(d.cat)}"><datalist id="catList">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div>
@@ -1026,7 +1304,7 @@ function openEditor(id, preset){
   <div class="foot"><button class="btn dan" data-act="edDelete" ${isNew ? "disabled" : ""}>削除する</button><button class="btn pri" data-act="edSave">保存する</button></div>`;
   sh.hidden = false; sh.scrollTop = 0;
   document.body.style.overflow = "hidden";
-  edRecalc(); edPhotosLoad();
+  edRecalc(); if (phv) fillImgs();
 }
 function edVal(name){ const el = document.querySelector(`#edForm [name="${name}"]`); return el ? el.value : ""; }
 function edRecalc(){
@@ -1037,80 +1315,282 @@ function edRecalc(){
   p.textContent = yen(c.profit); p.className = "v " + (c.profit < 0 ? "neg" : "");
   document.getElementById("edMargin").textContent = "利益率 " + pct(c.margin);
 }
-/* §5 商品画像（編集中は ED.photos の下書きだけを動かし、保存時に imgs へ反映） */
-async function edPhotosLoad(){
-  const ed = ED;
-  for (const p of ed.photos) if (p.id && p.data === null) p.data = await thumbURL(p.id);
-  if (ED === ed) edPhotosPaint();
+/* ---------- v1.3.0 §3 写真の画面（POST の詳細の写真枠・撮影画面・写真の管理・編集シート・背景ぼかし・書き出し） ---------- */
+// POST の UI.iid/cut/grid/col/csel/prepared/mgOpen/view に当たる状態。from は撮影画面の戻り先（editor＝編集画面、grid＝在庫）
+const PUI = {iid:null, cut:0, grid:false, col:false, csel:{}, prepared:null, mgOpen:false, view:null, from:"editor", seq:0};
+let EDI = null, ONE = null;
+const getI = id => { const it = S.items.find(i => String(i.id) === String(id)); return it ? phOf(it) : null; };
+const curItem = () => getI(PUI.iid);
+function phSave(){ return saveState().catch(e => toast("保存できませんでした: " + (e && e.message || e))); }
+function pOpen(t, h){ $("#shT").textContent = t; $("#shB").innerHTML = h; $("#psheet").hidden = false; $("#shB").scrollTop = 0; }
+function pClose(){ blEnd(); $("#psheet").hidden = true; $("#shB").innerHTML = ""; }
+// POST の render / rerender / go（詳細 detail ＝ セラーの編集画面の「3. 商品画像」、撮影 shoot ＝ 全画面の #shoot）
+function phRender(){
+  const it = PUI.view === "shoot" ? curItem() : peekItem(), sh = $("#shoot");
+  if (PUI.view === "shoot" && it){ sh.innerHTML = shootHTML(it); sh.hidden = false; document.body.style.overflow = "hidden"; }
+  else { sh.hidden = true; sh.innerHTML = ""; if (PUI.view === "shoot") PUI.view = null; }
+  const box = $("#edPh"); if (box && ED && it && String(ED.id) === String(PUI.iid)) box.innerHTML = edPhotoInner(it, false);
+  fillImgs();
 }
-function edPhotosPaint(){
-  const box = document.getElementById("edPhotos"); if (!box || !ED) return;
-  const n = ED.photos.length;
-  box.innerHTML = n ? ED.photos.map((p, i) => `<div class="pc" data-pi="${i}"><button type="button" class="pimg" data-act="pView" data-i="${i}" aria-label="写真${i + 1}を拡大"></button>${i === 0 ? `<span class="pmain">メイン</span>` : ""}
-    <div class="pbtns"><button type="button" data-act="pMove" data-i="${i}" data-d="-1" aria-label="前へ" ${i === 0 ? "disabled" : ""}>←</button><button type="button" data-act="pMove" data-i="${i}" data-d="1" aria-label="後ろへ" ${i === n - 1 ? "disabled" : ""}>→</button><button type="button" data-act="pDel" data-i="${i}">削除</button></div></div>`).join("")
-    : `<div class="pempty">NO IMAGE</div>`;
-  ED.photos.forEach((p, i) => {
-    const b = box.querySelector(`.pimg[data-i="${i}"]`);
-    if (p.data){ const im = document.createElement("img"); im.alt = ""; im.src = p.data; b.appendChild(im); } else b.textContent = "NO IMAGE";
-  });
+function rerender(){ const m = $("#shoot"), y = m.scrollTop; phRender(); m.scrollTop = y; }
+function go(view, iid){
+  PUI.view = view; if (iid !== undefined) PUI.iid = iid; PUI.col = false; PUI.csel = {}; PUI.prepared = null; ONE = null;
+  if (view === "shoot"){ phRender(); $("#shoot").scrollTop = 0; return; }
+  // 撮影画面を閉じる：編集画面から来たときは編集画面へ、在庫から来たときは在庫へ
+  PUI.view = null; phRender();
+  if (!ED){ document.body.style.overflow = ""; setTab("master"); }
 }
-function edPhotoAdd(data){
-  if (!ED || typeof data !== "string" || !/^data:image\/(jpeg|png|webp);base64,/.test(data)) return false;
-  ED.photos.push({data}); edPhotosPaint(); return true;
+function frameHTML(it, s, i, cls){ const cam = `<input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1">`;
+  if (s.imgId) return `<label class="${cls || "ph"}" data-frame="${i}"><span data-simg="${i}"></span><span class="lbl">${esc(s.label)}</span>${cam}</label>`;
+  return `<label class="${cls || "ph"} vac" data-frame="${i}"><span class="tp">タップして<br>撮影</span><span class="lbl">${esc(s.label.replace(/（.*?）/, ""))}</span>${cam}</label>`; }
+// 編集画面の「3. 商品画像」＝ POST の詳細画面の写真枠の部分
+function edPhotoInner(it, isNew){
+  if (isNew) return `<div class="sec">3. 商品画像</div><div class="sub">先に「保存する」で商品を登録すると、撮影リスト（状態に応じた必須カット）で写真を撮れます。</div>`;
+  const pr = progress(it);
+  return `<div class="sec">3. 商品画像</div>
+  <div class="photos">${it.shots.map((sh, i) => frameHTML(it, sh, i)).join("")}</div>
+  <div class="h-row" style="margin-top:7px"><span class="sub">写真の枠をタップすると、そのまま撮影が始まります</span><button class="lnk nw" data-act="shoot">写真の管理・状態メモ ›</button></div>
+  <div class="sub" style="margin-top:2px">必須 ${pr.done}/${pr.all}・写真 ${pr.photos}枚${it.extPhotos ? "・写真はアプリ外で用意済み" : ""}</div>`;
 }
-function edPhotoMove(i, d){
-  const j = i + d; if (!ED || j < 0 || j >= ED.photos.length) return;
-  const a = ED.photos; [a[i], a[j]] = [a[j], a[i]]; edPhotosPaint();
-}
-function edPhotoDel(i){ if (!ED) return; ED.photos.splice(i, 1); closeModal(); edPhotosPaint(); }
-function edPhotoView(i){
-  const p = ED && ED.photos[i]; if (!p) return;
-  showModal(`<h3>写真 ${i + 1} / ${ED.photos.length}${i === 0 ? "（メイン）" : ""}</h3><img class="pview" id="pvImg" alt="">
-    <div class="acts"><button class="btn" data-act="mclose">閉じる</button>${i ? `<button class="btn" data-act="pMain" data-i="${i}">メインにする</button>` : ""}<button class="btn dan" data-act="pDel" data-i="${i}">削除</button></div>`);
-  if (p.data) document.getElementById("pvImg").src = p.data;
-}
-function edPhotoMain(i){ if (!ED || !ED.photos[i]) return; ED.photos.unshift(ED.photos.splice(i, 1)[0]); closeModal(); edPhotosPaint(); }
-async function edPhotosCommit(d){
-  const old = itemPhotos(d), ids = [];
-  let k = 0;
-  for (const p of ED.photos){
-    if (p.id){ ids.push(p.id); continue; }
-    const pid = "p_" + d.id + "_" + Date.now().toString(36) + (k++).toString(36);
-    await idbPut("imgs", pid, p.data); thumbCache.set(pid, p.data); ids.push(pid);
-  }
-  for (const o of old) if (!ids.includes(o)){ await idbDel("imgs", o); thumbCache.delete(o); }
-  if (ids.length || Array.isArray(d.photos)) d.photos = ids;
-  d.thumb = ids[0] || "";
-}
-/* カメラ（getUserMedia）。使えない端末では input[capture] で端末のカメラを起動する */
-let camStream = null, camCount = 0;
-function stopCam(){ if (camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; } }
-function blurChips(){ return `<div class="f"><label>背景ぼかし（撮影した写真に適用）</label><div class="chips" id="blurLv" style="margin:0">${["none","w","m","s"].map(k => `<button type="button" class="chip ${LOC.blur === k ? "on" : ""}" data-act="blurLv" data-v="${k}">${BLUR_NAME[k]}</button>`).join("")}</div></div>`; }
-async function camOpen(){
-  camCount = 0;
-  const can = navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
-  if (!can){ camFallback("この環境ではアプリ内カメラが使えません。"); return; }
-  showModal(`<h3>カメラで撮影</h3><video id="camVideo" playsinline muted autoplay></video>${blurChips()}
-    <div class="muted" id="camCnt">続けて何枚でも撮れます。撮った写真：0枚</div>
-    <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn pri" data-act="camShot">撮影する</button></div>`);
+/* ---------- 撮影（詳細から開く。カメラは写真枠のタップでだけ開く） ---------- */
+function seg(name, opts, cur){ return `<div class="seg">${opts.map(([v, t]) => `<button class="${String(cur) === String(v) ? "on" : ""}" data-act="flag" data-k="${name}" data-v="${v}">${t}</button>`).join("")}</div>`; }
+function memoRow(it, k, lb, ph){ return `<div class="flag"><span>${lb}</span><input class="memo1" data-memo="${k}" value="${esc(str(it[k]))}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" maxlength="200"></div>`; }
+function shootHTML(it){ if (PUI.cut >= it.shots.length) PUI.cut = Math.max(0, it.shots.length - 1); const i = PUI.cut, s = it.shots[i]; const pr = progress(it); const d = s && DEFS[s.key]; const ck = coverKey(it);
+  const big = s ? (s.imgId ? `<label class="bigframe" data-frame="${i}"><span data-simg="${i}" data-big="1"></span><span class="ov" style="top:12px;left:12px">カット${i + 1}：${esc(s.label)}</span><span class="ov" style="bottom:12px;right:12px">タップで撮り直し</span><input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1"></label>`
+    : `<label class="bigframe" data-frame="${i}"><span class="guide"></span><span class="ov" style="top:12px;left:12px">カット${i + 1}：${esc(s.label)}</span>${LOC.autoBlur ? '<span class="ov" style="bottom:12px;right:12px">背景ぼかし ON</span>' : ""}<span class="tap">タップして撮影<small>${esc(d ? d.guide : "")}</small></span><input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1"></label>`) : "";
+  return `<div class="h-row"><button class="back" data-act="shootBack">‹ ${PUI.from === "grid" ? "在庫に戻る" : "編集画面に戻る"}</button><span class="chip">${pr.done} / ${pr.all} カット</span></div>
+  <div class="dtitle">撮影</div><div class="sub" style="margin-top:2px">${esc(itemTitle(it))}</div>
+  ${big}
+  <div class="cuts">${it.shots.map((x, j) => `<button class="cut${x.imgId ? " done" : ""}${j === i ? " now" : ""}" data-act="cutSel" data-i="${j}"><div class="bx">${x.imgId ? "✓" : j === i ? "●" : j + 1}</div>${esc(cpCut(x.label.replace(/（.*?）/, ""), 6))}</button>`).join("")}</div>
+  ${s && s.imgId ? `<div class="btns" style="margin-top:8px"><button class="btn btn-ghost sm" data-act="edit" data-i="${i}">編集（ぼかし・回転・切り抜き）</button>${s.collage || s.thumb ? "" : `<button class="btn btn-ghost sm" data-act="addDup" data-i="${i}">＋ 続きを撮る枠</button>`}<button class="btn btn-dng sm" data-act="photoDel" data-i="${i}">写真削除</button></div>` : ""}
+  <div class="secttl">状態メモ（撮影しながら記録）</div>
+  <div class="flag"><span>区分</span>${seg("setk", SETK.map(x => [x, x.replace("セット", "")]), it.setk)}</div>
+  <div class="flag"><span>初版</span>${seg("shoban", [["all","全巻"],["part","一部"],["none","なし"]], it.shoban)}</div>
+  ${it.shoban === "part" ? memoRow(it, "shobanVols", "内訳", "初版の巻（例：2巻のみ／1〜3巻）") : ""}
+  <div class="flag"><span>帯</span>${seg("obi", [["all","全巻"],["part","一部"],["none","なし"]], it.obi)}</div>
+  ${it.obi === "part" ? memoRow(it, "obiVols", "内訳", "帯の巻（例：4巻のみ）") : ""}
+  <div class="flag"><span>特典</span>${seg("bonus", [["1","あり"],["0","なし"]], it.bonus ? "1" : "0")}</div>
+  <div class="flag"><span>状態</span>${seg("condBad", [["0","良好"],["1","難あり"]], it.condBad ? "1" : "0")}</div>
+  ${it.condBad ? memoRow(it, "condMemo", "メモ", "状態メモ（例：3巻の表紙に折れ）") : ""}
+  <div class="btns" style="margin-top:8px"><button class="btn btn-ghost sm" data-act="condCopy">状態メモをコピー（Muse送信用）</button></div>
+  <label class="tog"><input type="checkbox" id="autoBlur"${LOC.autoBlur ? " checked" : ""}> 撮影後に背景ぼかし（画面中央の商品を残す・ネット接続時）</label>
+  <label class="tog"><input type="checkbox" id="extPh"${it.extPhotos ? " checked" : ""}> 写真はアプリ外で用意済み（未撮影として扱わない）</label>
+  <div class="btns" style="margin-top:14px"><button class="btn btn-ghost wide" data-act="shootBack">完了 ›</button></div>
+  <div style="margin-top:8px"><button class="btn btn-pri" data-act="nextShoot">保存して、次の未撮影商品へ ›</button></div>
+  <div style="margin-top:8px" id="albumTop">${PUI.prepared && PUI.prepared.id === it._it.id ? `<button class="btn btn-acc" style="width:100%" data-act="shareGo">共有シートを開く（${PUI.prepared.files.length}枚）→『画像を保存』</button>`
+    : `<button class="btn btn-acc" style="width:100%" data-act="exportPrep"${pr.photos ? "" : " disabled"}>写真をアルバムに保存（${pr.photos}枚）</button>`}</div>
+  <details class="fold wrap"${PUI.mgOpen ? " open" : ""} data-fold="mgOpen"><summary>写真の管理（並べ替え・削除・続き撮影・合成・文字入れ・書き出し）</summary>${manageHTML(it)}</details>`; }
+function manageHTML(it){ const ck = coverKey(it); const sel = Object.keys(PUI.csel).filter(k => PUI.csel[k]); const pr = progress(it);
+  return `<div class="sub" style="margin-top:6px">この順に書き出されます・1枚目がカバー。写真 ${pr.photos}枚${pr.photos > PHOTO_MAX ? `<b style="color:var(--neg)">（${PHOTO_MAX}枚を超えています。メルカリは${PHOTO_MAX}枚まで）</b>` : ""}</div>
+  ${it.shots.map((s, i) => { const d = DEFS[s.key]; const model = LOC.models[s.key];
+    return `<div class="shotrow">${frameHTML(it, s, i)}<div style="min-width:0"><div>${s.imgId && PUI.col ? `<input type="checkbox" class="selbox" data-col="${i}" ${PUI.csel[i] ? "checked" : ""} style="vertical-align:middle"> ` : ""}<span class="lb">${i + 1}. ${esc(s.label)}</span>${s.required ? '<span class="bdg req">必須</span>' : '<span class="bdg">任意</span>'}${s.key === ck && !s.custom ? '<span class="bdg cover">カバー推奨</span>' : ""}${s.imgId ? '<span class="bdg ok">撮影済</span>' : ""}</div>
+    ${d ? `<div class="gd">撮り方：${esc(d.guide)}</div>` : '<div class="gd"></div>'}
+    ${model && (!s.custom || s.dup) ? `<div class="model" data-act="modelView" data-k="${esc(s.key)}"><img data-mimg="${esc(model)}" alt="">お手本（タップで拡大）</div>` : ""}
+    <div class="btns">${s.imgId ? `${s.collage || s.thumb ? "" : `<button class="ck" data-act="addDup" data-i="${i}">＋続き</button>`}<button class="ck" data-act="edit" data-i="${i}">編集</button>${model && (!s.custom || s.dup) ? `<button class="ck" data-act="compare" data-i="${i}">お手本と比較</button>` : ""}<button class="ck" data-act="setModel" data-i="${i}">お手本に登録</button><button class="ck" data-act="photoDel" data-i="${i}" style="color:var(--neg)">写真削除</button>` : ""}
+      <button class="ck" data-act="up" data-i="${i}" ${i === 0 ? "disabled" : ""}>↑</button><button class="ck" data-act="down" data-i="${i}" ${i === it.shots.length - 1 ? "disabled" : ""}>↓</button>
+      ${!s.required ? `<button class="ck" data-act="shotDel" data-i="${i}" style="color:var(--neg)">枠を削除</button>` : ""}</div></div></div>`; }).join("")}
+  <div class="secttl">任意の枠を追加</div>
+  ${(() => { const ks = isSet(it) ? OPT_KEYS.filter(k => !it.shots.some(s => s.key === k)) : []; return ks.length ? `<div class="btns" style="margin-bottom:8px">${ks.map(k => `<button class="ck" data-act="addOpt" data-k="${k}">＋ ${esc(DEFS[k].label)}</button>`).join("")}</div>` : ""; })()}
+  <div class="srch" style="margin-top:4px"><input id="cusL" placeholder="ラベル（例：特典の裏面）"><button class="btn btn-ghost sm" data-act="addCustom">追加</button></div>
+  <div class="secttl">分割合成（表紙並べ・特典一式を1枚に）</div>
+  ${PUI.col ? `<div class="sub" style="margin-bottom:6px">写真のチェックを入れて選んでください（選択中 ${sel.length}枚）。奥付・帯アップは文字が読めなくなるため、分割合成には向きません。</div>
+    <div class="btns"><button class="btn btn-acc sm" data-act="colDo" data-n="2">2×2で作る</button><button class="btn btn-acc sm" data-act="colDo" data-n="3">3×3で作る</button><button class="btn btn-ghost sm" data-act="colMode">やめる</button></div>`
+  : `<button class="btn btn-ghost sm" data-act="colMode">写真を選んで合成する</button>`}
+  <div class="secttl">カバー文字入れ（1枚目にだけ、書き出し時に合成）</div>
+  <label class="tog"><input type="checkbox" id="bnOn" ${it.banner && it.banner.on ? "checked" : ""}> 黄色バナーを入れる</label>
+  <div class="srch" style="margin-top:6px"><input id="bnTx" value="${esc(bannerText(it))}"><button class="btn btn-ghost sm" data-act="bnReset">自動に戻す</button></div>
+  <div class="chips">${BN_CHIPS.map(w => { const on = bannerText(it).includes(w); return `<button class="fchip${on ? " on" : ""}" data-act="bnChip" data-w="${esc(w)}" aria-pressed="${on}">${esc(w)}</button>`; }).join("")}</div>
+  <div class="btns" style="margin-top:8px"><button class="btn btn-ghost sm" data-act="bnPreview">プレビュー</button></div>
+  <div class="sub" id="bnWarn" style="margin-top:6px;color:var(--neg);font-weight:700"${bannerFits(bannerText(it)) ? " hidden" : ""}>注意：文字が長すぎて、最小サイズまで縮めても帯に収まりません。文言を短くしてください。</div>
+  <div class="secttl">書き出し</div>
+  ${PUI.prepared && PUI.prepared.id === it._it.id ? `<button class="btn btn-acc" style="width:100%" data-act="shareGo">共有シートを開く（${PUI.prepared.files.length}枚）→「画像を保存」</button>`
+    : `<button class="btn btn-ghost" style="width:100%" data-act="exportPrep" ${pr.photos ? "" : "disabled"}>アルバムへ保存（${pr.photos}枚・この順番で）</button>`}
+  <div class="sub" style="margin-top:6px">JPEG・メルカリ／Yahoo!フリマ／ラクマ共通。ヤフオクは先頭10枚を使ってください。</div>`; }
+async function fillImgs(){ const seq = ++PUI.seq, iid = PUI.iid; const it = peekItem();
+  if (!it) return;
+  for (const e of document.querySelectorAll("#shoot [data-simg], #edPh [data-simg]")){ const s = it.shots[+e.dataset.simg]; if (!s || !s.imgId) continue; const u = await shotURL(s.imgId, s.edit, e.dataset.big ? 1000 : 200); if (PUI.seq !== seq || PUI.iid !== iid) return;
+    if (e.isConnected) e.innerHTML = u ? `<img src="${u}" alt="">` : '<span style="font-size:9px">写真データなし</span>'; }
+  for (const e of document.querySelectorAll("#shoot [data-mimg]")){ const u = await imgURL(e.dataset.mimg); if (u && e.isConnected) e.src = u; } }
+
+/* ---------- 写真の取り込み（枠タップ → カメラ → 自動縮小して IndexedDB へ） ---------- */
+async function importPhoto(it, i, file){ const s = it.shots[i]; if (!s) return; toast("保存中…");
+  let blob; try { blob = await compress(file); } catch (e) { toast("画像を読み込めませんでした"); return; }
+  if (s.imgId){ await pDel(s.imgId).catch(() => {}); dropURL(s.imgId); if (hasBlur(s.edit)) pDel(s.edit.blur.mask).catch(() => {}); }
+  const id = "p_" + uid(); await pPut({id, orig:blob, at:Date.now(), item:it._it.id, kind:"photo"}); s.imgId = id; s.base = {square:true, crop:{x:0, y:0, scale:1}}; s.edit = JSON.parse(JSON.stringify(s.base));
+  finalize(it); phSave(); PUI.prepared = null; ONE = null;
+  // 次の未撮影の枠へ進める（撮影画面のとき）
+  if (PUI.view === "shoot"){ const nx = it.shots.findIndex((x, j) => j > i && !x.imgId); PUI.cut = nx >= 0 ? nx : i; }
+  else { PUI.cut = i; PUI.view = "shoot"; PUI.from = ED ? "editor" : "grid"; }
+  rerender(); toast(`保存しました（${Math.round(blob.size / 1024)}KB）${it.shotStatus === "撮影完了" ? "・必須カットがそろいました" : ""}`);
+  if (LOC.autoBlur) autoBlur(it, s); }
+async function autoBlur(it, s){ let seg; try { seg = await loadSeg(); } catch (e) { toast("背景ぼかしはネット接続時に使えます（写真はぼかしなしで保存済み）"); return; }
+  try { const r = await pGet(s.imgId); const src = srcOf(r); if (!src) return; const res = await makeMask(seg, src, 0.5, 0.5); if (res.ratio < 0.005 || res.ratio > 0.97){ toast("中央の商品をうまく切り出せませんでした（編集から指定できます）"); return; }
+    const id = "k_" + uid(); await pPut({id, orig:res.blob, at:Date.now(), item:it._it.id, kind:"mask"}); s.edit = Object.assign({}, s.edit || {}, {blur:{mask:id, x:0.5, y:0.5, lvl:"m"}}); dropURL(s.imgId); phSave(); rerender(); toast("背景ぼかし（中）を適用しました"); }
+  catch (e) { toast("背景ぼかしでエラーが起きました（写真はそのまま保存済み）"); } }
+
+/* ---------- 編集シート（KOMA の編集画面） ---------- */
+function gridSVG(img){ const w = img.naturalWidth, h = img.naturalHeight; const m = Math.min(w, h); const x0 = (w - m) / 2, y0 = (h - m) / 2;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${[1, 2].map(k => `<line x1="${w * k / 3}" y1="0" x2="${w * k / 3}" y2="${h}" stroke="#fff" stroke-opacity=".7" stroke-width="${w / 400}"/><line x1="0" y1="${h * k / 3}" x2="${w}" y2="${h * k / 3}" stroke="#fff" stroke-opacity=".7" stroke-width="${w / 400}"/>`).join("")}
+  <line x1="${w / 2}" y1="0" x2="${w / 2}" y2="${h}" stroke="#fff" stroke-opacity=".95" stroke-dasharray="${w / 60}" stroke-width="${w / 300}"/><line x1="0" y1="${h / 2}" x2="${w}" y2="${h / 2}" stroke="#fff" stroke-opacity=".95" stroke-dasharray="${w / 60}" stroke-width="${w / 300}"/>
+  <rect x="${x0}" y="${y0}" width="${m}" height="${m}" fill="none" stroke="#fff" stroke-width="${w / 200}"/><rect x="${x0}" y="${y0}" width="${m}" height="${m}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="${w / 600}"/></svg>`; }
+function wireGrid(){ document.querySelectorAll("#psheet .imgpv img").forEach(img => { const go = () => { const old = img.parentNode.querySelector("svg"); if (old) old.remove(); if (PUI.grid) img.insertAdjacentHTML("afterend", gridSVG(img)); }; if (img.complete && img.naturalWidth) go(); else img.onload = go; }); }
+async function openEdit(i){ const it = curItem(); const s = it && it.shots[i]; if (!s || !s.imgId) return; const ed = s.edit || {};
+  const r = await pGet(s.imgId); const src = srcOf(r); if (!src){ toast("写真データがありません"); return; }
+  const u = await shotURL(s.imgId, ed, 1200); const rc = await rotated(src, ed.rot); const rb = await toBlob(rc, 0.8);
+  if (EDI && EDI.rotURL) URL.revokeObjectURL(EDI.rotURL); EDI = {id: it._it.id, i, rotURL: URL.createObjectURL(rb), w: rc.width, h: rc.height, crop: Object.assign({x:0, y:0, scale:1}, ed.crop || {})};
+  pOpen(`編集：${s.label}`, `<div class="imgpv"><img id="edImg" src="${u || ""}" alt=""></div>
+  <div class="btns"><button class="btn ${ed.auto ? "btn-acc" : "btn-ghost"} sm" data-act="eAuto">自動補正${ed.auto ? "（ON）" : ""}</button><button class="btn btn-ghost sm" data-act="eRot">⟳ 回転</button><button class="btn btn-ghost sm" data-act="eSq">${ed.square ? "1:1をやめる（元画角）" : "1:1にする"}</button><button class="btn ${hasBlur(ed) ? "btn-acc" : "btn-ghost"} sm" data-act="eBlur">背景ぼかし${hasBlur(ed) ? `（${BLUR_NAME[ed.blur.lvl] || "中"}）` : ""}</button><button class="btn btn-ghost sm" data-act="eUndo">元に戻す</button></div>
+  <div id="oneBox" style="margin-top:8px">${oneBtnHTML(it, i)}</div>
+  ${ed.square ? `<div class="secttl">画角調整（写真をドラッグで移動・スライダーで拡大）</div>
+  <div id="cropBox" class="cropbox"><img id="cropImg" src="${EDI.rotURL}" alt="" draggable="false"></div>
+  <div class="h-row" style="margin-top:8px"><span class="sub">縮小</span><input id="cropZ" type="range" min="1" max="3" step="0.01" value="${EDI.crop.scale}" style="flex:1"><span class="sub">拡大</span><button class="ck" data-act="cropReset">中央に戻す</button></div>` : ""}
+  <label class="tog"><input type="checkbox" id="gridOn" ${PUI.grid ? "checked" : ""}> グリッド（三分割＋中央線＋1:1枠）を表示</label>
+  <div class="sub" style="margin-top:8px">写真は取り込んだまま（元の画角）で保存し、編集は表示と書き出しのときに反映します。「元に戻す」でいつでも取り込み直後（1:1・中央）の状態に戻せます（背景ぼかしも外れます）。</div>`);
+  wireGrid(); if (ed.square) wireCrop(); }
+function cropGrid(){ const b = $("#cropBox"); if (!b) return; const o = b.querySelector("svg"); if (o) o.remove(); if (!PUI.grid) return;
+  b.insertAdjacentHTML("beforeend", `<svg viewBox="0 0 300 300" preserveAspectRatio="none"><line x1="100" y1="0" x2="100" y2="300"/><line x1="200" y1="0" x2="200" y2="300"/><line x1="0" y1="100" x2="300" y2="100"/><line x1="0" y1="200" x2="300" y2="200"/><line class="c" x1="150" y1="0" x2="150" y2="300"/><line class="c" x1="0" y1="150" x2="300" y2="150"/></svg>`); }
+function placeCrop(){ const b = $("#cropBox"), im = $("#cropImg"); if (!b || !im || !EDI) return; const box = b.clientWidth; const {sx, sy, side} = cropRect(EDI.w, EDI.h, EDI.crop); const k = box / side;
+  im.style.width = EDI.w * k + "px"; im.style.height = EDI.h * k + "px"; im.style.left = (-sx * k) + "px"; im.style.top = (-sy * k) + "px"; }
+function setCropCenter(cx, cy){ const {side} = cropRect(EDI.w, EDI.h, EDI.crop); const fx = EDI.w > side ? (clamp(cx, side / 2, EDI.w - side / 2) - EDI.w / 2) / ((EDI.w - side) / 2) : 0; const fy = EDI.h > side ? (clamp(cy, side / 2, EDI.h - side / 2) - EDI.h / 2) / ((EDI.h - side) / 2) : 0; EDI.crop.x = fx; EDI.crop.y = fy; }
+let cropT = null;
+function commitCrop(){ clearTimeout(cropT); cropT = setTimeout(async () => { const it = getI(EDI.id); const s = it && it.shots[EDI.i]; if (!s) return;
+  s.edit = Object.assign({}, s.edit || {}, {crop:{x: +EDI.crop.x.toFixed(4), y: +EDI.crop.y.toFixed(4), scale: +(+EDI.crop.scale).toFixed(3)}}); dropURL(s.imgId); it.updatedAt = Date.now(); PUI.prepared = null; ONE = null; phSave(); const bx = $("#oneBox"); if (bx) bx.innerHTML = oneBtnHTML(it, EDI.i);
+  const u = await shotURL(s.imgId, s.edit, 1200); const e = $("#edImg"); if (e && u) e.src = u; rerender(); }, 250); }
+function wireCrop(){ const b = $("#cropBox"), im = $("#cropImg"); if (!b) return; const go = () => { placeCrop(); cropGrid(); }; if (im.complete && im.naturalWidth) go(); else im.onload = go;
+  let st = null; b.addEventListener("pointerdown", e => { const {sx, sy, side} = cropRect(EDI.w, EDI.h, EDI.crop); st = {x: e.clientX, y: e.clientY, cx: sx + side / 2, cy: sy + side / 2, k: b.clientWidth / side}; try { b.setPointerCapture(e.pointerId); } catch (_) {} });
+  b.addEventListener("pointermove", e => { if (!st) return; setCropCenter(st.cx - (e.clientX - st.x) / st.k, st.cy - (e.clientY - st.y) / st.k); placeCrop(); });
+  const end = () => { if (st){ st = null; commitCrop(); } }; b.addEventListener("pointerup", end); b.addEventListener("pointercancel", end);
+  const z = $("#cropZ"); z.addEventListener("input", () => { EDI.crop.scale = +z.value; placeCrop(); }); z.addEventListener("change", () => commitCrop()); }
+async function applyEdit(mut){ const it = getI(EDI.id); const s = it.shots[EDI.i]; s.edit = Object.assign({}, s.edit || {}); mut(s); dropURL(s.imgId); it.updatedAt = Date.now(); PUI.prepared = null; ONE = null; phSave(); await openEdit(EDI.i); rerender(); }
+/* 背景ぼかし画面（タップ→マスク生成→強さを選んでプレビュー→適用） */
+let BL = null;
+async function openBlur(){ if (!EDI) return; const it = getI(EDI.id); const s = it && it.shots[EDI.i]; if (!s || !s.imgId) return;
+  const r = await pGet(s.imgId).catch(() => null); const src = srcOf(r); if (!src){ toast("写真データがありません"); return; }
+  const ed = s.edit || {}; const b = hasBlur(ed) ? ed.blur : null; blEnd();
+  BL = {tok: uid(), i: EDI.i, src, rot: ed.rot || 0, x: b && b.x != null ? b.x : null, y: b && b.y != null ? b.y : null, mask: b ? b.mask : null, applied: b ? b.mask : null, lvl: b && BLUR_LV[b.lvl] ? b.lvl : "m", busy:false, url:null, seq:0};
+  pOpen(`背景ぼかし：${s.label}`, `<div class="gdbox" id="blG">${b ? "今のぼかしを表示しています。作り直すときは商品をタップしてください" : "商品をタップしてください（タップした物を残して、背景をぼかします）"}</div>
+  <div class="imgpv" id="blBox"><img id="blImg" data-act="blTap" src="" alt="" style="cursor:crosshair"><div id="blMk" class="mk" hidden></div></div>
+  <div id="blSt" class="blst" hidden><div class="bar"><i></i></div><span id="blStT"></span></div>
+  <div class="flag"><span>強さ</span><div class="seg" id="blLv">${["w","m","s"].map(v => `<button class="${BL.lvl === v ? "on" : ""}" data-act="blLv" data-v="${v}">${BLUR_NAME[v]}</button>`).join("")}</div></div>
+  <div class="btns" style="margin-top:8px"><button class="btn btn-acc sm" data-act="blApply">この強さで適用</button><button class="btn btn-ghost sm" data-act="blCancel">やめる（編集に戻る）</button>${b ? '<button class="btn btn-dng sm" data-act="blOff">ぼかしを外す</button>' : ""}</div>
+  <div class="sub" style="margin-top:8px">初回はぼかし用のライブラリとモデル（数MB）をネットから読み込みます。元の写真は変わりません。</div>`);
+  await blPreview(); }
+async function blPreview(){ if (!BL) return; const B = BL, seq = ++B.seq; const ed = {rot: B.rot}; if (B.mask) ed.blur = {mask: B.mask, lvl: B.lvl};
+  let b = null; try { b = await renderEdit(B.src, ed, 1200); } catch (e) {} if (BL !== B || B.seq !== seq || !b) return;
+  if (B.url) URL.revokeObjectURL(B.url); B.url = URL.createObjectURL(b); const im = $("#blImg"); if (im) im.src = B.url; blMark(); }
+function blMark(){ const mk = $("#blMk"); if (!mk || !BL) return; if (BL.x == null){ mk.hidden = true; return; } const [x, y] = rotPt(BL.x, BL.y, BL.rot); mk.style.left = x * 100 + "%"; mk.style.top = y * 100 + "%"; mk.hidden = false; }
+function blStatus(t){ const e = $("#blSt"); if (!e) return; e.hidden = !t; const tt = $("#blStT"); if (tt) tt.textContent = t || ""; }
+function blEnd(){ if (!BL) return; if (BL.mask && BL.mask !== BL.applied) pDel(BL.mask).catch(() => {}); if (BL.url) URL.revokeObjectURL(BL.url); BL = null; }
+async function blTap(e){ if (!BL || BL.busy) return; const im = $("#blImg"); const rc = im && im.getBoundingClientRect(); if (!rc || !rc.width || !rc.height) return;
+  const B = BL; const [x, y] = rotPt(clamp((e.clientX - rc.left) / rc.width, 0, 1), clamp((e.clientY - rc.top) / rc.height, 0, 1), (4 - B.rot) % 4);
+  const px = B.x, py = B.y; B.busy = true; B.x = x; B.y = y; blMark(); const t0 = performance.now();
   try {
-    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment", width:{ideal:1920}, height:{ideal:1440}}, audio:false});
-    const v = document.getElementById("camVideo");
-    if (!v){ stopCam(); return; }
-    v.srcObject = camStream; await v.play().catch(() => {});
-  } catch (e) { stopCam(); camFallback("カメラを起動できませんでした（" + (e && e.name || "エラー") + "）。"); }
-}
-function camFallback(why){
-  showModal(`<h3>カメラで撮影</h3><p>${esc(why)}端末のカメラで撮影して追加します。</p>${blurChips()}
-    <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn pri" data-act="camFileGo">カメラを起動</button></div>`);
-}
-function camShot(){
-  const v = document.getElementById("camVideo");
-  if (!v || !camStream || !v.videoWidth){ toast("カメラの準備中です"); return; }
-  try {
-    if (edPhotoAdd(frameToPhoto(v, LOC.blur))){ camCount++; const c = document.getElementById("camCnt"); if (c) c.textContent = "続けて何枚でも撮れます。撮った写真：" + camCount + "枚"; toast("追加しました（" + ED.photos.length + "枚目）"); }
-  } catch (e) { toast("撮影に失敗しました"); }
-}
+    let seg; try { blStatus(SEGOK ? "準備中…" : "ぼかし用のライブラリとモデルを読み込み中…（初回のみ・数MB）"); seg = await loadSeg(); }
+    catch (err) { if (BL !== B) return; const i = B.i; blEnd(); toast("背景ぼかしはネット接続時に使えます（読み込みに失敗しました）"); await openEdit(i); return; }
+    if (BL !== B) return; blStatus("被写体のマスクを生成中…"); await new Promise(r => setTimeout(r, 30));
+    let res; try { res = await makeMask(seg, B.src, x, y); } catch (err) { if (BL === B){ B.x = px; B.y = py; blMark(); blStatus(""); toast("マスクを作れませんでした。商品の別の場所をタップしてください"); } return; }
+    if (BL !== B) return; blStatus("保存中…"); const id = "k_" + uid(); await pPut({id, orig: res.blob, at: Date.now(), item: EDI && EDI.id, kind: "mask"});
+    if (BL !== B){ pDel(id).catch(() => {}); return; }
+    if (B.mask && B.mask !== B.applied) pDel(B.mask).catch(() => {}); B.mask = id; blStatus(""); await blPreview();
+    const g = $("#blG"); if (g) g.textContent = res.ratio < 0.005 || res.ratio > 0.97 ? "注意：被写体をうまく切り出せなかった可能性があります。商品の別の場所をタップし直してください"
+      : `✓ マスクを作りました（${((performance.now() - t0) / 1000).toFixed(1)}秒）。違う場合は商品をタップし直してください`; }
+  catch (err) { if (BL === B){ blStatus(""); toast("背景ぼかしでエラーが起きました（編集内容はそのままです）"); } }
+  finally { B.busy = false; if (BL === B && !B.mask) blStatus(""); } }
+/* 書き出し（アルバムへ保存） */
+const safeName = t => String(t || "seller").replace(/[\\\/:*?"<>|\r\n\t]/g, "").replace(/\s+/g, "_").slice(0, 60) || "seller";
+async function exportFiles(it){ const list = it.shots.filter(s => s.imgId); const files = []; const base = safeName(itemTitle(it));
+  for (let i = 0; i < list.length; i++){ let b = await shotBlob(list[i]); if (!b) continue;
+    if (files.length === 0 && it.banner && it.banner.on && bannerText(it)) b = await withBanner(b, bannerText(it));
+    files.push(new File([b], `${base}_${String(files.length + 1).padStart(2, "0")}.jpg`, {type: "image/jpeg"})); }
+  return files; }
+function oneIndex(it, i){ const list = it.shots.filter(s => s.imgId); return list.indexOf(it.shots[i]); }
+function oneBtnHTML(it, i){ const k = oneIndex(it, i); if (k < 0) return ""; const name = `${safeName(itemTitle(it))}_${String(k + 1).padStart(2, "0")}.jpg`;
+  return ONE && ONE.id === it._it.id && ONE.i === i ? `<button class="btn btn-acc" style="width:100%" data-act="oneGo">共有シートを開く（この1枚）→「画像を保存」</button>`
+    : `<button class="btn btn-ghost" style="width:100%;white-space:normal" data-act="onePrep">この写真だけ保存（${esc(name)}）</button>`; }
+async function exportOne(it, i){ const s = it.shots[i]; const k = oneIndex(it, i); if (k < 0) return null; let b = await shotBlob(s); if (!b) return null;
+  if (k === 0 && it.banner && it.banner.on && bannerText(it)) b = await withBanner(b, bannerText(it));
+  return new File([b], `${safeName(itemTitle(it))}_${String(k + 1).padStart(2, "0")}.jpg`, {type: "image/jpeg"}); }
+function downloadFiles(files){ files.forEach((f, i) => setTimeout(() => downloadBlob(f, f.name), i * 400)); }
+async function shareFiles(files){ if (navigator.canShare && navigator.share && navigator.canShare({files})){ try { await navigator.share({files}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+  downloadFiles(files); toast("この環境では共有シートが使えないため、ダウンロードします"); }
+// 次の未撮影商品（POST は出品キューの「未撮影」。セラーは在庫の「仕入れ済み」で、束ねた中身を除き、写真の準備ができていないもの。一覧と同じ並び）
+function nextUnshot(curId){ const mem = memberSet(); return S.items.find(x => x.st === "stock" && !mem.has(x) && String(x.id) !== String(curId) && !(isPlainObj(x.ph) && Array.isArray(x.ph.shots) && photosReady(phOf(x)))) || null; }
+async function copyCond(t){ return copyText(t); }
+
+/* ---------- 操作（POST の A のうち写真まわり。.pst の中のボタンだけがここに来る） ---------- */
+const PA = {
+  closeSheet(){ pClose(); },
+  shoot(){ const it = curItem(); if (!it) return; PUI.from = "editor"; PUI.cut = Math.max(0, it.shots.findIndex(s => !s.imgId)); go("shoot"); },
+  shootBack(){ go("detail"); },
+  cutSel(b){ PUI.cut = +b.dataset.i; rerender(); },
+  async nextShoot(){ const cur = curItem(); if (!cur) return; const curId = cur._it.id; await phSave();
+    // 「保存して」：編集画面から来ているときは、編集画面の入力も保存してから次へ進む
+    if (ED && String(ED.id) === String(curId)) await edSave();
+    const nx = nextUnshot(curId);
+    if (!nx){ toast("ほかに未撮影の商品はありません"); go("queue"); return; }
+    const p = phOf(nx); PUI.from = "grid"; PUI.cut = Math.max(0, p.shots.findIndex(s => !s.imgId)); go("shoot", nx.id); toast(`次：${itemTitle(p)}`); },
+  flag(b){ const it = curItem(); const k = b.dataset.k, v = b.dataset.v; if (k === "bonus" || k === "condBad") it[k] = v === "1"; else it[k] = v; regen(it); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  async condCopy(){ const it = curItem(); if (!it) return; const t = condText(it); await copyCond(t); },
+  up(b){ const it = curItem(); const i = +b.dataset.i; if (i < 1) return; [it.shots[i - 1], it.shots[i]] = [it.shots[i], it.shots[i - 1]]; finalize(it); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  down(b){ const it = curItem(); const i = +b.dataset.i; if (i >= it.shots.length - 1) return; [it.shots[i + 1], it.shots[i]] = [it.shots[i], it.shots[i + 1]]; finalize(it); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  async photoDel(b){ const it = curItem(); const i = +b.dataset.i; const s = it.shots[i]; if (!s || !confirm(`「${s.label}」の写真を削除しますか？（元に戻せません）`)) return; await pDel(s.imgId).catch(() => {}); dropURL(s.imgId); if (hasBlur(s.edit)) pDel(s.edit.blur.mask).catch(() => {});
+    if (s.collage || s.thumb || s.legacy){ it.shots.splice(i, 1); } else { s.imgId = null; s.edit = {}; s.base = {}; } finalize(it); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  async shotDel(b){ const it = curItem(); const i = +b.dataset.i; const s = it.shots[i]; if (!s || s.required) return; if (!confirm(`枠「${s.label}」を削除しますか？${s.imgId ? "（写真も消えます）" : ""}`)) return; if (s.imgId){ await pDel(s.imgId).catch(() => {}); dropURL(s.imgId); } it.shots.splice(i, 1); finalize(it); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  addOpt(b){ const k = b.dataset.k; if (!OPT_KEYS.includes(k)) return; const it = curItem(); if (it.shots.some(s => s.key === k)) return; const s = mkShot(k, false); s.optional = true; it.shots.push(s); finalize(it); phSave(); rerender(); },
+  addDup(b){ const it = curItem(); const i = +b.dataset.i; const s = it && it.shots[i]; if (!s || !s.imgId || s.collage) return;
+    let at = i + 1; while (at < it.shots.length && it.shots[at].key === s.key && it.shots[at].dup) at++;
+    const ns = mkDup(it, s.key); it.shots.splice(at, 0, ns); PUI.csel = {}; finalize(it); phSave(); PUI.prepared = null; ONE = null; if (PUI.view === "shoot") PUI.cut = at; rerender(); toast(`「${ns.label}」の枠を追加しました。枠をタップして撮影してください`); },
+  addCustom(){ const it = curItem(); const l = ($("#cusL").value || "").trim(); if (!l){ toast("ラベルを入力してください"); return; } it.shots.push({key: "c_" + uid(), label: l, required: false, imgId: null, cover: false, custom: true}); finalize(it); phSave(); rerender(); },
+  edit(b){ openEdit(+b.dataset.i); },
+  eAuto(){ applyEdit(s => { s.edit.auto = !s.edit.auto; }); }, eRot(){ applyEdit(s => { s.edit.rot = ((s.edit.rot || 0) + 1) % 4; }); }, eSq(){ applyEdit(s => { s.edit.square = !s.edit.square; }); },
+  eUndo(){ applyEdit(s => { const m = hasBlur(s.edit) ? s.edit.blur.mask : null; s.edit = JSON.parse(JSON.stringify(s.base || {})); if (m) pDel(m).catch(() => {}); }); },
+  eBlur(){ openBlur(); },
+  blTap(b, e){ blTap(e); },
+  blLv(b){ if (!BL || !BLUR_LV[b.dataset.v]) return; BL.lvl = b.dataset.v; document.querySelectorAll("#blLv button").forEach(x => x.classList.toggle("on", x.dataset.v === BL.lvl)); if (BL.mask) blPreview(); },
+  blApply(){ if (!BL || BL.busy) return; if (!BL.mask){ toast("先に商品をタップしてください"); return; } const B = BL; BL = null; if (B.url) URL.revokeObjectURL(B.url);
+    applyEdit(s => { s.edit.blur = {mask: B.mask, x: B.x == null ? null : +B.x.toFixed(4), y: B.y == null ? null : +B.y.toFixed(4), lvl: B.lvl}; });
+    if (B.applied && B.applied !== B.mask) pDel(B.applied).catch(() => {}); toast(`背景ぼかし（${BLUR_NAME[B.lvl]}）を適用しました`); },
+  blCancel(){ if (!BL) return; const i = BL.i; blEnd(); openEdit(i); },
+  blOff(){ if (!BL || BL.busy) return; const old = BL.applied; blEnd(); applyEdit(s => { delete s.edit.blur; }); if (old) pDel(old).catch(() => {}); toast("背景ぼかしを外しました"); },
+  cropReset(){ applyEdit(s => { s.edit.crop = {x:0, y:0, scale:1}; }); },
+  async setModel(b){ const it = curItem(); const s = it.shots[+b.dataset.i]; const bl = await shotBlob(s); if (!bl) return; const old = LOC.models[s.key]; const id = "m_" + uid();
+    await pPut({id, orig: bl, at: Date.now(), kind: "model"}); LOC.models[s.key] = id; if (old){ await pDel(old).catch(() => {}); dropURL(old); } await saveLocal(); rerender(); toast(`「${s.label}」のお手本に登録しました`); },
+  async modelView(b){ const u = await imgURL(LOC.models[b.dataset.k]); pOpen(`お手本：${(DEFS[b.dataset.k] || {}).label || ""}`, `<div class="imgpv"><img src="${u}" alt=""></div><label class="tog"><input type="checkbox" id="gridOn" ${PUI.grid ? "checked" : ""}> グリッドを表示</label>`); wireGrid(); },
+  async compare(b){ const it = curItem(); const s = it.shots[+b.dataset.i]; const a = await imgURL(LOC.models[s.key]), c = await shotURL(s.imgId, s.edit, 1200);
+    pOpen(`比較：${s.label}`, `<div class="cmp"><div><div class="sub">お手本</div><div class="imgpv"><img src="${a}" alt=""></div></div><div><div class="sub">今回</div><div class="imgpv"><img src="${c}" alt=""></div></div></div>
+    <label class="tog"><input type="checkbox" id="gridOn" ${PUI.grid ? "checked" : ""}> グリッドを表示して画角を比べる</label>`); wireGrid(); },
+  colMode(){ PUI.col = !PUI.col; PUI.csel = {}; PUI.mgOpen = true; rerender(); },
+  async colDo(b){ const it = curItem(); const n = +b.dataset.n; const idx = Object.keys(PUI.csel).filter(k => PUI.csel[k]).map(Number).sort((x, y) => x - y);
+    if (idx.length < 2){ toast("2枚以上選んでください"); return; } if (idx.length > n * n){ toast(`${n}×${n}は${n * n}枚までです`); return; }
+    const bad = idx.filter(i => READABLE.includes(it.shots[i].key));
+    if (bad.length && !confirm(`「${bad.map(i => it.shots[i].label).join("」「")}」は文字が読めることが大事な写真です。分割すると文字が読めなくなります。それでも含めますか？`)) return;
+    toast("合成中…"); const blobs = []; for (const i of idx){ const bl = await shotBlob(it.shots[i]); if (bl) blobs.push(bl); }
+    const out = await collage(blobs, n); const id = "p_" + uid(); await pPut({id, orig: out, at: Date.now(), item: it._it.id, kind: "photo"});
+    it.shots.push({key: "col_" + uid(), label: `分割合成 ${n}×${n}（${idx.length}枚）`, required: false, imgId: id, cover: false, custom: true, collage: true});
+    PUI.col = false; PUI.csel = {}; finalize(it); phSave(); PUI.prepared = null; ONE = null; rerender(); toast("合成画像を追加しました（元の写真はそのままです）"); },
+  bnChip(b){ const it = curItem(); if (!it) return; const inp = $("#bnTx"); const cur = (inp ? inp.value : bannerText(it)).replace(/\s*\n\s*/g, " ").trim(); const v = bnToggle(cur, b.dataset.w);
+    it.banner = Object.assign({on:false}, it.banner, {text: v === bannerDefault(it) ? "" : v}); phSave(); ONE = null; PUI.prepared = null; rerender(); },
+  bnReset(){ const it = curItem(); it.banner = Object.assign({on:false}, it.banner, {text: ""}); phSave(); PUI.prepared = null; ONE = null; rerender(); },
+  async bnPreview(){ const it = curItem(); const f = it.shots.find(s => s.imgId); if (!f){ toast("先に1枚目の写真を撮ってください"); return; } const fb = await shotBlob(f); if (!fb) return;
+    const b = await withBanner(fb, bannerText(it)); const u = URL.createObjectURL(b); pOpen("カバー文字入れのプレビュー", `<div class="imgpv"><img src="${u}" alt=""></div><div class="sub">書き出す1枚目にだけ合成されます。元の写真は変わりません。</div>`); },
+  async exportPrep(){ const it = curItem(); if (it.banner && it.banner.on && !bannerFits(bannerText(it)) && !confirm("カバー文字が長すぎて、帯に収まりきりません（右端が切れます）。このまま書き出しますか？")) return; toast("書き出しの準備中…"); const files = await exportFiles(it); if (!files.length){ toast("写真がありません"); return; }
+    PUI.prepared = {id: it._it.id, files}; PUI.mgOpen = true; rerender(); toast("準備できました。「共有シートを開く」を押してください"); },
+  async shareGo(){ const P = PUI.prepared; if (!P) return; await shareFiles(P.files); },
+  async onePrep(){ if (!EDI) return; const it = getI(EDI.id); const i = EDI.i; const f = await exportOne(it, i); if (!f){ toast("写真データがありません"); return; } ONE = {id: it._it.id, i, file: f}; const bx = $("#oneBox"); if (bx) bx.innerHTML = oneBtnHTML(it, i); toast("準備できました。「共有シートを開く」を押してください"); },
+  async oneGo(){ if (!ONE) return; await shareFiles([ONE.file]); }
+};
+function memoInput(el){ const k = el.dataset && el.dataset.memo; if (!k || !MEMO_KEYS.includes(k)) return false; const it = curItem(); if (!it) return true; if (it[k] !== el.value){ it[k] = el.value; it.updatedAt = Date.now(); phSave(); } return true; }
+// POST の change ハンドラの写真まわり（枠のファイル選択・合成の選択・グリッド・自動ぼかし・アプリ外フラグ・バナー）
+async function phChange(e){ const el = e.target;
+  if (memoInput(el)) return true;
+  if (el.dataset.shot !== undefined && el.files && el.files[0]){ const f = el.files[0]; el.value = ""; const it = getI(el.dataset.item); if (it){ PUI.iid = it._it.id; await importPhoto(it, +el.dataset.shot, f); } return true; }
+  if (el.dataset.col !== undefined){ PUI.csel[el.dataset.col] = el.checked; rerender(); return true; }
+  if (el.id === "gridOn"){ PUI.grid = el.checked; wireGrid(); cropGrid(); return true; }
+  if (el.id === "autoBlur"){ LOC.autoBlur = el.checked; saveLocal(); rerender(); return true; }
+  if (el.id === "extPh"){ const it = curItem(); it.extPhotos = el.checked; it.updatedAt = Date.now(); phSave(); rerender(); return true; }
+  if (el.id === "bnOn"){ const it = curItem(); it.banner = Object.assign({text: ""}, it.banner, {on: el.checked}); phSave(); PUI.prepared = null; ONE = null; rerender(); return true; }
+  if (el.id === "bnTx"){ const it = curItem(); const v = el.value.replace(/\s*\n\s*/g, " ").trim(); it.banner = Object.assign({on:false}, it.banner, {text: v === bannerDefault(it) ? "" : v}); phSave(); PUI.prepared = null; ONE = null; rerender(); return true; }
+  return false; }
 async function edSave(){
   const d = ED.draft;
   for (const el of document.querySelectorAll("#edForm [name]")) d[el.name] = el.value;
@@ -1119,8 +1599,9 @@ async function edSave(){
   { const c = S.settings.ch[d.soldCh]; if (c && d.feeRate === num(c.fee)) d.feeRate = ""; } // 販路と同じ率なら個別指定しない（設定変更に追随）
   d.soldFee = calc(d).fee;
   d.condChips = [...document.querySelectorAll("#condChips .chip.on")].map(b => b.dataset.c);
-  await edPhotosCommit(d);
   const i = S.items.findIndex(x => x.id === d.id);
+  // v1.3.0 §3 写真（撮影データ ph と photos/thumb）は撮影画面で保存済みの最新を引き継ぐ（編集画面の下書きで上書きしない）
+  if (i >= 0){ const cur = S.items[i]; for (const k of ["ph","photos","thumb"]){ if (k in cur) d[k] = cur[k]; else delete d[k]; } }
   if (i >= 0) S.items[i] = d; else S.items.push(d);
   await saveState();
   closeEditor(); render(); toast("保存しました");
@@ -1133,7 +1614,7 @@ function edDelete(){
 }
 async function edDeleteGo(){
   const id = ED.id, it = S.items.find(x => x.id === id);
-  if (it) for (const k of itemPhotos(it)){ await idbDel("imgs", k); thumbCache.delete(k); }
+  if (it) for (const k of itemImgIds(it)){ await idbDel("imgs", k); dropURL(k); }
   S.items = S.items.filter(x => x.id !== id);
   // v1.2.0 束ねた親を削除したら、中身は在庫一覧に戻す（隠れたままにしない）
   S.items.forEach(m => { if (m.inSet !== undefined && String(m.inSet) === String(id)) delete m.inSet; });
@@ -1425,7 +1906,7 @@ async function restoreGo(){
 
 /* モーダル */
 function showModal(html){ const m = document.getElementById("modal"); m.innerHTML = `<div class="box">${html}</div>`; m.hidden = false; }
-function closeModal(){ stopScan(); stopCam(); const m = document.getElementById("modal"); m.hidden = true; m.innerHTML = ""; }
+function closeModal(){ const m = document.getElementById("modal"); m.hidden = true; m.innerHTML = ""; }
 
 /* ---------- イベント ---------- */
 document.addEventListener("click", async (e) => {
@@ -1433,6 +1914,8 @@ document.addEventListener("click", async (e) => {
   if (tabBtn){ setTab(tabBtn.dataset.tab); return; }
   if (e.target.id === "fab"){ openNew(); return; }
   const el = e.target.closest("[data-act]"); if (!el) return;
+  // v1.3.0 §3 写真の画面（.pst の中）は POST の操作表 PA へ（POST と同じく disabled と入力欄のクリックは無視）
+  if (el.closest(".pst") && PA[el.dataset.act]){ if (el.disabled) return; if (e.target.tagName === "INPUT") return; e.preventDefault(); PA[el.dataset.act](el, e); return; }
   const a = el.dataset.act;
   switch (a){
     case "mprev": UI.month = addMonth(UI.month, -1); render(); break;
@@ -1458,25 +1941,16 @@ document.addEventListener("click", async (e) => {
     case "unbundle": unbundleAsk(); break;
     case "unbundleGo": unbundleGo(); break;
     /* v1.2.0 §3 読み取りで登録 */
+    /* v1.3.0 §2 読み取りで登録（SSS の A.regScan / regIsbn / regManual / regPendOk / regPendManual / regPendSkip / regForm と同じ） */
     case "regOpen": regOpen(); break;
     case "regClose": regClose(); break;
-    case "rgChip": { const c = el.dataset.c; if (!REG) break; const i = REG.chips.indexOf(c); if (i >= 0) REG.chips.splice(i, 1); else REG.chips.push(c); el.classList.toggle("on", i < 0); break; }
-    case "regScan": if (Scan.on){ stopScan(); break; } if (!regParams()) break;
-      scanStart(document.getElementById("regCam"), regCode).then(r => { const b = document.getElementById("regScanBtn"); if (b && r && Scan.on) b.textContent = "読み取り停止"; }); break;
-    case "regIsbn": { const inp = document.getElementById("rgIsbn"), v = normCode(inp.value);
-      if (!/^\d{13}$/.test(v) && !/^\d{8}$/.test(v)){ toast("ISBN／JANを確認してください"); break; }
-      if (!regParams()) break; inp.value = ""; regCode(v); break; }
-    case "regManual": { const inp = document.getElementById("rgName"), n = (inp.value || "").trim();
-      if (!n){ toast("商品名を入力してください"); break; } if (!regParams()) break;
-      const d = regDup("", n);
-      if (d.length){ REG.pend = {code:"", title:n, dups:d}; regPendShow(); inp.value = ""; break; }
-      if (await regAdd({title:n})) inp.value = ""; break; }
-    case "regForm": { const d0 = normDate((document.getElementById("rgD") || {}).value) || today(); stopScan(); REG = null; openEditor(null, {st:"stock", date:d0}); break; }
-    case "regPendOk": { const P = REG && REG.pend; if (!P) break; if (await regAdd(P)){ REG.pend = null; regPendShow(); } break; }
-    case "regPendManual": { const P = REG && REG.pend; if (!P) break; const n = ((document.getElementById("rgPendName") || {}).value || "").trim();
-      if (!n){ toast("商品名を入力してください"); break; } if (await regAdd({code:P.code, title:n})){ REG.pend = null; regPendShow(); } break; }
-    case "regPendSkip": if (REG){ REG.pend = null; regPendShow(); } break;
-    case "scan": startScan(); break;
+    case "regScan": if (Scan.on){ stopScan(); break; } if (!regParams()) break; startScan("#regCam", regCode).then(() => { const b = $("#regScanBtn"); if (b && Scan.on) b.textContent = "■ 読み取り停止"; }); break;
+    case "regIsbn": { const v = normCode($("#rgIsbn").value); if (!/^\d{13}$/.test(v) && !/^\d{8}$/.test(v)){ toast("ISBN／JANを確認してください"); break; } $("#rgIsbn").value = ""; regCode(v); break; }
+    case "regManual": { const n = ($("#rgName").value || "").trim(); if (!n){ toast("商品名を入力してください"); break; } const d = regDup("", n); if (d.length && !confirm(`同じ巻がすでに在庫にあります（${d.map(x => x.name).join("、")}）。それでも登録しますか？`)) break; if (regAdd({title:n})) $("#rgName").value = ""; break; }
+    case "regPendOk": { const P = REG && REG.pend; if (!P) break; REG.pend = null; regAdd(P); regPendShow(); break; }
+    case "regPendManual": { const P = REG && REG.pend; const n = (($("#rgPendName") || {}).value || "").trim(); if (!P || !n){ toast("商品名を入力してください"); break; } REG.pend = null; regAdd({code:P.code, title:n}); regPendShow(); break; }
+    case "regPendSkip": if (REG) REG.pend = null; regPendShow(); break;
+    case "regForm": { const st = S.settings.store || ""; if (Scan.on) stopScan(); REG = null; openEditor(null, {st:"stock", date:today(), store:st}); break; }
     case "isbnGo": isbnGo(); break;
     case "manual": closeModal(); openEditor(null, {}); break;
     case "mclose": closeModal(); break;
@@ -1485,15 +1959,6 @@ document.addEventListener("click", async (e) => {
     case "edDelete": if (!el.disabled) edDelete(); break;
     case "edDeleteGo": edDeleteGo(); break;
     case "cchip": el.classList.toggle("on"); break;
-    case "photoLib": document.getElementById("photoFile").click(); break;
-    case "camOpen": camOpen(); break;
-    case "camShot": camShot(); break;
-    case "camFileGo": document.getElementById("camFile").click(); closeModal(); break;
-    case "blurLv": LOC.blur = el.dataset.v; saveLocal(); for (const b of document.querySelectorAll("#blurLv .chip")) b.classList.toggle("on", b === el); break;
-    case "pView": edPhotoView(Number(el.dataset.i)); break;
-    case "pMove": edPhotoMove(Number(el.dataset.i), Number(el.dataset.d)); break;
-    case "pDel": edPhotoDel(Number(el.dataset.i)); break;
-    case "pMain": edPhotoMain(Number(el.dataset.i)); break;
     case "toolSw": UI.tool = el.dataset.v === "calc" ? "calc" : "tpl"; render(); break;
     case "tChip": UI.tcat = el.dataset.v; render(); break;
     case "tplCopy": tplUse(el.dataset.id); break;
@@ -1516,6 +1981,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 document.addEventListener("input", (e) => {
+  if (e.target.closest && e.target.closest(".pst")){ memoInput(e.target); return; }
   if (e.target.id === "salesQ"){
     UI.salesQ = e.target.value;
     const pos = e.target.selectionStart; renderSales();
@@ -1536,33 +2002,17 @@ document.addEventListener("input", (e) => {
   if (e.target.dataset && e.target.dataset.fv !== undefined && FILL){ const t = S.templates.find(x => String(x.id) === FILL.id); const pv = document.getElementById("fillPv"); if (t && pv) pv.textContent = fillText(tBody(t), FILL.vs, fillVals()); return; }
   if (e.target.dataset && e.target.dataset.c && C){ C[e.target.dataset.c] = e.target.value; calcLive(); return; }
 });
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter" || e.isComposing) return;
-  const m = {rgIsbn:"regIsbn", rgName:"regManual", rgPendName:"regPendManual"}[e.target.id];
-  if (m){ e.preventDefault(); const b = document.querySelector(`[data-act="${m}"]`); if (b) b.click(); }
-});
 document.addEventListener("change", (e) => {
+  if (e.target.closest && e.target.closest(".pst")){ phChange(e); return; }
   if (e.target.dataset && e.target.dataset.cset) calcSetSave(e.target.dataset.cset, e.target.value);
 });
 document.addEventListener("toggle", (e) => {
-  const k = e.target.dataset && e.target.dataset.fold; if (k) UI[k] = e.target.open;
+  const k = e.target.dataset && e.target.dataset.fold; if (!k) return;
+  if (e.target.closest && e.target.closest(".pst")) PUI[k] = e.target.open; else UI[k] = e.target.open;
 }, true);
 document.getElementById("restoreFile").addEventListener("change", async (e) => {
   const f = e.target.files[0]; e.target.value = "";
   if (f) restoreFromText(await f.text());
-});
-async function addPhotoFiles(files, lvl){
-  let n = 0;
-  for (const f of files){ if (!ED) break; try { if (edPhotoAdd(await fileToPhoto(f, lvl))) n++; } catch (err) { toast(err.message); } }
-  if (n) toast(n + "枚追加しました（保存で確定）");
-}
-document.getElementById("photoFile").addEventListener("change", async (e) => {
-  const fs = [...e.target.files]; e.target.value = "";
-  if (fs.length && ED) addPhotoFiles(fs, "none");   // ライブラリからの追加はぼかしをかけない
-});
-document.getElementById("camFile").addEventListener("change", async (e) => {
-  const fs = [...e.target.files]; e.target.value = "";
-  if (fs.length && ED) addPhotoFiles(fs, LOC.blur);  // 端末のカメラで撮った写真には背景ぼかしを適用
 });
 
 /* ---------- 起動 ---------- */
@@ -1573,8 +2023,12 @@ const ready = (async () => {
   setTab("analysis");
 })();
 window.__seller = {get S(){ return S; }, ready, calc, monthAgg, parseBackup, buildExport, buildCSV, restoreFromText, setTab, openEditor, UI, APP_VER, lookupBiblio,
-  get LOC(){ return LOC; }, get ED(){ return ED; }, get lastCopy(){ return LAST_COPY; }, edPhotoAdd, calcProfit, perVol, capOf, needCalc, estCalc, fileToPhoto, frameToPhoto, csvRows,
-  invAgg, memberSet, membersOf, mixedName, setName, workKey, itemKey, normCode, ean13ok, decodeImageData, regCode, regDup, get REG(){ return REG; }, get Scan(){ return Scan; }};
+  get LOC(){ return LOC; }, get ED(){ return ED; }, get lastCopy(){ return LAST_COPY; }, calcProfit, perVol, capOf, needCalc, estCalc, csvRows,
+  invAgg, memberSet, membersOf, mixedName, setName, workKey, itemKey, normCode, ean13ok, decodeImageData, regCode, regDup, get REG(){ return REG; }, get Scan(){ return Scan; },
+  // v1.3.0 確認用（写真・読み取り）
+  PUI, phOf, phBadge, progress, reqKeys, canon, condText, bannerText, bannerDefault, bnToggle, renderEdit, blurBg, makeMask, withBanner, collage, exportFiles, photosReady, isBook, fetchBiblio, CHART_KEYS,
+  get SEGOK(){ return SEGOK; }, loadSeg, onCode, startScan, stopScan, regOpen, regPendShow, shootHTML, PA, phPeek, guessFlags, regen, mkDup, finalize,
+  __setSeg(seg){ SEGP = seg ? Promise.resolve(seg) : null; SEGOK = !!seg; }};
 </script>
 </body>
 </html>
