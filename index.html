@@ -308,7 +308,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.3.0";
+const APP_VER = "1.4.0";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -1342,14 +1342,23 @@ function go(view, iid){
 }
 function frameHTML(it, s, i, cls){ const cam = `<input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1">`;
   if (s.imgId) return `<label class="${cls || "ph"}" data-frame="${i}"><span data-simg="${i}"></span><span class="lbl">${esc(s.label)}</span>${cam}</label>`;
-  return `<label class="${cls || "ph"} vac" data-frame="${i}"><span class="tp">タップして<br>撮影</span><span class="lbl">${esc(s.label.replace(/（.*?）/, ""))}</span>${cam}</label>`; }
+  // v1.4.0 空き枠はタップで「カメラで撮影／ライブラリから選ぶ」の選択シート（PA.pick）。撮影済みの枠は従来どおりタップで撮り直し
+  return `<div class="${cls || "ph"} vac" data-frame="${i}" data-act="pick" data-i="${i}" data-item="${esc(it._it.id)}" role="button" tabindex="0"><span class="tp">タップして<br>撮影・選択</span><span class="lbl">${esc(s.label.replace(/（.*?）/, ""))}</span></div>`; }
+// v1.4.0 取り込み元の選択シート（POST の pOpen シート）。どちらも <label> で file 入力を包み、タップで直接ピッカーを開く（iOS で確実に開くため）。
+//   ライブラリ側は capture 属性なし＝iOS の写真ライブラリ。選んだ後は phChange → importPhoto（カメラと同じ compress）へ
+function pickHTML(it, i){ const s = it.shots[i], at = `data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1"`;
+  return `<div class="sub" style="margin-bottom:10px">「${esc(s.label)}」の写真をどこから取り込みますか？</div>
+  <div style="display:flex;flex-direction:column;gap:10px" id="pickBox">
+  <label class="btn btn-pri" style="position:relative" data-pick="cam">カメラで撮影<input type="file" accept="image/*" capture="environment" class="camin" data-src="cam" ${at}></label>
+  <label class="btn btn-ghost" style="position:relative" data-pick="lib">ライブラリから選ぶ<input type="file" accept="image/*" class="camin" data-src="lib" ${at}></label>
+  <button class="btn btn-ghost" data-act="closeSheet">やめる</button></div>`; }
 // 編集画面の「3. 商品画像」＝ POST の詳細画面の写真枠の部分
 function edPhotoInner(it, isNew){
   if (isNew) return `<div class="sec">3. 商品画像</div><div class="sub">先に「保存する」で商品を登録すると、撮影リスト（状態に応じた必須カット）で写真を撮れます。</div>`;
   const pr = progress(it);
   return `<div class="sec">3. 商品画像</div>
   <div class="photos">${it.shots.map((sh, i) => frameHTML(it, sh, i)).join("")}</div>
-  <div class="h-row" style="margin-top:7px"><span class="sub">写真の枠をタップすると、そのまま撮影が始まります</span><button class="lnk nw" data-act="shoot">写真の管理・状態メモ ›</button></div>
+  <div class="h-row" style="margin-top:7px"><span class="sub">空いた枠をタップすると、撮影かライブラリから選べます</span><button class="lnk nw" data-act="shoot">写真の管理・状態メモ ›</button></div>
   <div class="sub" style="margin-top:2px">必須 ${pr.done}/${pr.all}・写真 ${pr.photos}枚${it.extPhotos ? "・写真はアプリ外で用意済み" : ""}</div>`;
 }
 /* ---------- 撮影（詳細から開く。カメラは写真枠のタップでだけ開く） ---------- */
@@ -1357,7 +1366,7 @@ function seg(name, opts, cur){ return `<div class="seg">${opts.map(([v, t]) => `
 function memoRow(it, k, lb, ph){ return `<div class="flag"><span>${lb}</span><input class="memo1" data-memo="${k}" value="${esc(str(it[k]))}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" maxlength="200"></div>`; }
 function shootHTML(it){ if (PUI.cut >= it.shots.length) PUI.cut = Math.max(0, it.shots.length - 1); const i = PUI.cut, s = it.shots[i]; const pr = progress(it); const d = s && DEFS[s.key]; const ck = coverKey(it);
   const big = s ? (s.imgId ? `<label class="bigframe" data-frame="${i}"><span data-simg="${i}" data-big="1"></span><span class="ov" style="top:12px;left:12px">カット${i + 1}：${esc(s.label)}</span><span class="ov" style="bottom:12px;right:12px">タップで撮り直し</span><input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1"></label>`
-    : `<label class="bigframe" data-frame="${i}"><span class="guide"></span><span class="ov" style="top:12px;left:12px">カット${i + 1}：${esc(s.label)}</span>${LOC.autoBlur ? '<span class="ov" style="bottom:12px;right:12px">背景ぼかし ON</span>' : ""}<span class="tap">タップして撮影<small>${esc(d ? d.guide : "")}</small></span><input type="file" accept="image/*" capture="environment" class="camin" data-shot="${i}" data-item="${esc(it._it.id)}" tabindex="-1"></label>`) : "";
+    : `<div class="bigframe" data-frame="${i}" data-act="pick" data-i="${i}" data-item="${esc(it._it.id)}" role="button" tabindex="0"><span class="guide"></span><span class="ov" style="top:12px;left:12px">カット${i + 1}：${esc(s.label)}</span>${LOC.autoBlur ? '<span class="ov" style="bottom:12px;right:12px">背景ぼかし ON</span>' : ""}<span class="tap">タップして撮影・選択<small>${esc(d ? d.guide : "")}</small></span></div>`) : "";
   return `<div class="h-row"><button class="back" data-act="shootBack">‹ ${PUI.from === "grid" ? "在庫に戻る" : "編集画面に戻る"}</button><span class="chip">${pr.done} / ${pr.all} カット</span></div>
   <div class="dtitle">撮影</div><div class="sub" style="margin-top:2px">${esc(itemTitle(it))}</div>
   ${big}
@@ -1392,6 +1401,7 @@ function manageHTML(it){ const ck = coverKey(it); const sel = Object.keys(PUI.cs
   <div class="secttl">任意の枠を追加</div>
   ${(() => { const ks = isSet(it) ? OPT_KEYS.filter(k => !it.shots.some(s => s.key === k)) : []; return ks.length ? `<div class="btns" style="margin-bottom:8px">${ks.map(k => `<button class="ck" data-act="addOpt" data-k="${k}">＋ ${esc(DEFS[k].label)}</button>`).join("")}</div>` : ""; })()}
   <div class="srch" style="margin-top:4px"><input id="cusL" placeholder="ラベル（例：特典の裏面）"><button class="btn btn-ghost sm" data-act="addCustom">追加</button></div>
+  <div class="btns" style="margin-top:8px"><label class="btn btn-ghost sm" style="position:relative" id="libAdd">＋ ライブラリから追加（複数可）<input type="file" accept="image/*" multiple class="camin" data-libadd="1" data-item="${esc(it._it.id)}" tabindex="-1"></label></div>
   <div class="secttl">分割合成（表紙並べ・特典一式を1枚に）</div>
   ${PUI.col ? `<div class="sub" style="margin-bottom:6px">写真のチェックを入れて選んでください（選択中 ${sel.length}枚）。奥付・帯アップは文字が読めなくなるため、分割合成には向きません。</div>
     <div class="btns"><button class="btn btn-acc sm" data-act="colDo" data-n="2">2×2で作る</button><button class="btn btn-acc sm" data-act="colDo" data-n="3">3×3で作る</button><button class="btn btn-ghost sm" data-act="colMode">やめる</button></div>`
@@ -1523,6 +1533,8 @@ const PA = {
   shoot(){ const it = curItem(); if (!it) return; PUI.from = "editor"; PUI.cut = Math.max(0, it.shots.findIndex(s => !s.imgId)); go("shoot"); },
   shootBack(){ go("detail"); },
   cutSel(b){ PUI.cut = +b.dataset.i; rerender(); },
+  // v1.4.0 空き枠のタップ：取り込み元の選択シートを開くだけ（選ぶまではカメラもライブラリも開かない）
+  pick(b){ const it = getI(b.dataset.item); const i = +b.dataset.i; if (!it || !it.shots[i]) return; PUI.iid = it._it.id; pOpen("写真を追加", pickHTML(it, i)); },
   async nextShoot(){ const cur = curItem(); if (!cur) return; const curId = cur._it.id; await phSave();
     // 「保存して」：編集画面から来ているときは、編集画面の入力も保存してから次へ進む
     if (ED && String(ED.id) === String(curId)) await edSave();
@@ -1583,7 +1595,16 @@ function memoInput(el){ const k = el.dataset && el.dataset.memo; if (!k || !MEMO
 // POST の change ハンドラの写真まわり（枠のファイル選択・合成の選択・グリッド・自動ぼかし・アプリ外フラグ・バナー）
 async function phChange(e){ const el = e.target;
   if (memoInput(el)) return true;
-  if (el.dataset.shot !== undefined && el.files && el.files[0]){ const f = el.files[0]; el.value = ""; const it = getI(el.dataset.item); if (it){ PUI.iid = it._it.id; await importPhoto(it, +el.dataset.shot, f); } return true; }
+  if (el.dataset.shot !== undefined && el.files && el.files[0]){ const f = el.files[0]; el.value = ""; const it = getI(el.dataset.item);
+    if (el.closest("#psheet")) pClose();   // v1.4.0 選択シートから選んだら閉じてから、カメラと同じ取り込みへ
+    if (it){ PUI.iid = it._it.id; await importPhoto(it, +el.dataset.shot, f); } return true; }
+  // v1.4.0 写真の管理「ライブラリから追加」：選んだ枚数だけ末尾に任意枠（追加写真 n）を足し、1枚ずつ importPhoto（カメラと同じ compress）で取り込む
+  if (el.dataset.libadd !== undefined && el.files && el.files.length){ const fs = [...el.files]; el.value = ""; const it = getI(el.dataset.item); if (!it) return true; PUI.iid = it._it.id;
+    for (const f of fs){ const used = new Set(it.shots.map(s => s.label)); let n = it.shots.filter(s => /^追加写真 \d+$/.test(s.label)).length + 1; while (used.has(`追加写真 ${n}`)) n++;
+      const key = "c_" + uid(); it.shots.push({key, label: `追加写真 ${n}`, required: false, imgId: null, cover: false, custom: true}); finalize(it);
+      await importPhoto(it, it.shots.length - 1, f);
+      const at = it.shots.findIndex(s => s.key === key); if (at >= 0 && !it.shots[at].imgId){ it.shots.splice(at, 1); finalize(it); phSave(); rerender(); } }   // 読めなかった画像の枠は残さない
+    return true; }
   if (el.dataset.col !== undefined){ PUI.csel[el.dataset.col] = el.checked; rerender(); return true; }
   if (el.id === "gridOn"){ PUI.grid = el.checked; wireGrid(); cropGrid(); return true; }
   if (el.id === "autoBlur"){ LOC.autoBlur = el.checked; saveLocal(); rerender(); return true; }
