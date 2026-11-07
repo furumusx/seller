@@ -11,24 +11,25 @@
 [hidden]{display:none!important}
 *{box-sizing:border-box}
 /* v1.1.0 モノクロ基調：白・黒・グレーのみ。赤（--dan）は削除・全置換など危険操作のボタンだけに使う */
-:root{--bg:#f4f4f4;--card:#fff;--line:#dedede;--line2:#c8c8c8;--ink:#111;--sub:#4d4d4d;--mute:#8a8a8a;--soft:#f0f0f0;--dan:#b3261e;--tabh:60px}
+:root{--bg:#f4f4f4;--card:#fff;--line:#dedede;--line2:#c8c8c8;--ink:#111;--sub:#4d4d4d;--mute:#8a8a8a;--soft:#f0f0f0;--dan:#b3261e;--tabh:60px;--red:#e60012;--org:#f08300;--tabgap:10px}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 /* v1.2.0 §1 iOS Safari の自動ズーム対策：入力欄は16px以上（16px未満だとフォーカス時に拡大される）。ダブルタップ拡大も抑止 */
 input,select,textarea{font-size:16px!important}
-html{touch-action:manipulation;scroll-padding-bottom:calc(var(--tabh) + 24px + env(safe-area-inset-bottom))}
+html{touch-action:manipulation;scroll-padding-bottom:calc(var(--tabh) + var(--tabgap) + 24px + env(safe-area-inset-bottom))}
 a,button,input,select,textarea,label,summary,[data-act]{touch-action:manipulation}
 input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-height:42px;min-width:0;max-width:100%}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:disabled{opacity:.35;cursor:default}
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px}
 header h1{font-size:17px;font-weight:700;letter-spacing:.2px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#view{padding:12px 12px calc(var(--tabh) + 24px + env(safe-area-inset-bottom));max-width:100%;overflow-x:hidden}
-#tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#view{padding:12px 12px calc(var(--tabh) + var(--tabgap) + 24px + env(safe-area-inset-bottom));max-width:100%;overflow-x:hidden}
+/* v1.6.0 §3 浮動ピル型のタブバー（白＋影、選択中は赤） */
+#tabs{position:fixed;left:10px;right:10px;bottom:calc(var(--tabgap) + env(safe-area-inset-bottom));z-index:6;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--card);border:0;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.16),0 1px 3px rgba(0,0,0,.08);padding:0 6px;overflow:hidden}
 #tabs button{height:var(--tabh);border:0;background:none;font-size:10.5px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;white-space:nowrap;overflow:hidden}
 #tabs button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#tabs button.on{color:var(--ink);font-weight:700}
+#tabs button.on{color:var(--red);font-weight:700}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;min-width:0}
 .card h2{font-size:15px;margin:0 0 8px}
 .row{display:flex;align-items:center;gap:8px;min-width:0}
@@ -58,13 +59,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-off
 .f label{display:block;font-size:12px;color:var(--sub);margin-bottom:3px}
 .f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .f2>.f{min-width:0}
-.grp{font-size:13px;font-weight:700;color:var(--ink);margin:16px 2px 6px;padding-bottom:4px;border-bottom:1px solid var(--line2)}
-.srow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;min-width:0}
-.srow.est{border-style:dashed}
+.grp{font-size:13px;font-weight:800;color:var(--ink);margin:16px 2px 6px;padding:0 0 0 8px;border-left:3px solid var(--red);line-height:1.3}
+.srow{background:var(--card);border:0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:10px;margin-bottom:8px;display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:6px 10px;min-width:0}
+.srow.est{border:1px dashed var(--line2)}
 .srow .th,.cell .th{background:var(--soft) center/cover no-repeat;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:9px;font-weight:600;letter-spacing:.5px;overflow:hidden}
-.srow .th{width:52px;height:52px}
+.srow .th{width:56px;height:56px}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
-.srow .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .nm{font-weight:600;font-size:14px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
 .srow .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--sub);margin-top:2px}
 .srow .meta .pf{font-weight:800;color:var(--ink)}
 .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--line2);background:var(--soft);color:var(--sub);white-space:nowrap}
@@ -72,7 +73,23 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-off
 .stbtn{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--ink);background:#fff;color:var(--ink);white-space:nowrap}
 button.stbtn{min-height:26px}
 .stbtn.done{border-color:var(--line2);color:var(--sub);background:var(--soft)}
-.six{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 8px;font-size:12px;font-variant-numeric:tabular-nums}
+.six{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 8px;font-size:12px;font-variant-numeric:tabular-nums;border-top:1px solid var(--soft);padding-top:6px}
+.srow .side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:0;max-width:112px}
+.srow .side .stbtn,.srow .side .chch{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.stbtn.deal{background:var(--org);border-color:var(--org);color:#fff;font-weight:700}
+.stbtn.done{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important;font-weight:700}
+.stbtn.est{background:var(--soft);border-color:var(--line2);color:var(--sub);font-weight:700}
+.chch{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;white-space:nowrap;background:#e9e9e9;color:var(--sub);border:1px solid #e0e0e0}
+.chch.ch-m{background:#fdecee;color:var(--red);border-color:#f7c3c8}
+.sbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
+.pill{border:0;background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;min-height:38px;font-weight:700;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.1);white-space:nowrap}
+.pill.ic{width:42px;padding:0;font-size:18px;line-height:1}
+.pill.red{color:var(--red)}
+.sq{position:relative;margin-bottom:10px;min-width:0}
+.sq input.search{border:0;border-radius:999px;padding:9px 14px 9px 36px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.sq svg{position:absolute;left:12px;top:50%;width:16px;height:16px;margin-top:-8px;fill:none;stroke:var(--mute);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.allhd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:800;font-size:15px;margin:2px 2px 4px}
+.allhd small{font-size:12px;color:var(--sub);font-weight:600}
 .six div{display:flex;justify-content:space-between;gap:4px;min-width:0}
 .six span{color:var(--mute);white-space:nowrap}
 .six b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -80,13 +97,13 @@ button.stbtn{min-height:26px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .chip{border:1px solid var(--line2);background:#fff;color:var(--ink);border-radius:16px;padding:5px 11px;font-size:13px;min-height:32px}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.cell{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0;padding:0;text-align:left;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cell{background:var(--card);border:0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;min-width:0;padding:0;text-align:left;color:var(--ink)}
 .cell .th{width:100%;aspect-ratio:1/1;border-radius:0}
 .cell .lb{padding:4px 6px}
 .cell .pr{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .cell .cn{font-size:11px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fab{position:fixed;right:16px;bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom));z-index:7;width:56px;height:56px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:30px;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.fab{position:fixed;right:16px;bottom:calc(var(--tabh) + var(--tabgap) + 16px + env(safe-area-inset-bottom));z-index:7;width:56px;height:56px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:30px;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 #sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-padding-top:70px;scroll-padding-bottom:90px}
 #sheet .sh{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:6px 12px 6px 6px;padding-top:calc(6px + env(safe-area-inset-top));display:flex;align-items:center;gap:6px}
 #sheet .sh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
@@ -308,7 +325,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.5.0";
+const APP_VER = "1.6.0";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -765,7 +782,7 @@ function phBadge(it){
 }
 
 /* ---------- 画面 ---------- */
-const UI = {tab:"analysis", month:null, salesQ:"", masterF:"stock", tool:"tpl", tq:"", tcat:"all", revOpen:false, setOpen:false, selMode:false, sel:{}};
+const UI = {tab:"analysis", month:null, salesQ:"", masterQ:"", masterF:"stock", tool:"tpl", tq:"", tcat:"all", revOpen:false, setOpen:false, selMode:false, sel:{}};
 const $view = document.getElementById("view");
 function setTab(t){
   if (t === "link") t = "settings";   // v1.0.0 の連携タブは設定タブへ統合
@@ -868,25 +885,32 @@ function renderSales(){
   const listed = rows.filter(r => r.st === "listed").sort((a, b) => normDate(b.listDate).localeCompare(normDate(a.listDate)));
   const sold = rows.filter(r => r.st === "sold").sort((a, b) => normDate(b.soldDate).localeCompare(normDate(a.soldDate)));
   const groups = [];
-  if (deal.length) groups.push(["取引中", deal, "deal"]);
+  if (deal.length) groups.push(["取引未完了", deal, "deal"]);
   if (listed.length) groups.push(["出品中", listed, "listed"]);
   const byM = new Map();
   for (const it of sold){ const k = monthKey(it.soldDate) || "日付なし"; if (!byM.has(k)) byM.set(k, []); byM.get(k).push(it); }
-  for (const [k, list] of byM) groups.push([k === "日付なし" ? "売却済み｜日付なし" : "売却済み｜" + mLabel(k), list, k]);
+  for (const [k, list] of byM) groups.push([k === "日付なし" ? "売却済み｜日付なし" : mLabel(k), list, k]);
+  // v1.6.0 §2 セラーブック風：上部ピル（CSV出力／＋）→ 検索 → 「全ての商品 ◯個」→ 取引未完了 → 出品中 → 月別
   $view.innerHTML = `
-  <div class="row" style="margin-bottom:10px"><input class="search grow" id="salesQ" type="search" placeholder="商品名で検索" value="${esc(UI.salesQ)}"><button class="btn" data-act="csv">CSV出力</button></div>
-  <div class="muted" style="margin-bottom:4px">CSV は売却済み・取引中のみ（出品中は含めません）</div>
+  <div class="sbar" id="salesBar"><button class="pill red" data-act="csv">CSV出力</button><span class="grow"></span><button class="pill ic" data-act="salesNew" aria-label="新規登録">＋</button></div>
+  ${SEARCH_SVG("salesQ", UI.salesQ)}
+  <div class="allhd" id="salesAll">全ての商品 ${rows.length}個<small>CSV は売却済み・取引中のみ</small></div>
   <div id="salesList">${groups.length ? groups.map(([lab, list, k]) => `<div class="grp" data-grp="${esc(k)}">${esc(lab)}（${list.length}件）</div>` + list.map(it => it.st === "listed" ? listedRow(it) : saleRow(it)).join("")).join("") : `<div class="empty-note">該当する売上がありません</div>`}</div>`;
   fillThumbs($view);
 }
+// v1.6.0 検索バー（売上管理表・在庫で共通。入力欄の id と値だけが違う）
+function SEARCH_SVG(id, v){ return `<div class="sq"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input class="search" id="${id}" type="search" placeholder="商品名で探す" autocomplete="off" value="${esc(v)}"></div>`; }
+// 販路チップ（メルカリ=赤、それ以外=グレー）。文言は chName のまま
+function chChip(k, suffix){ return `<span class="chch ch-${esc(S.settings.ch[k] ? k : "x")}" data-ch="${esc(k || "")}">${esc(chName(k))}${suffix || ""}</span>`; }
 function saleRow(it){
   const c = calc(it);
   const date = normDate(it.st === "deal" ? (it.soldDate || it.listDate) : it.soldDate) || "—";
-  const stb = it.st === "deal" ? `<button class="stbtn" data-act="complete" data-id="${esc(it.id)}">取引中 → 完了にする</button>` : `<span class="stbtn done">取引完了</span>`;
+  const stb = it.st === "deal" ? `<button class="stbtn deal" data-act="complete" data-id="${esc(it.id)}">取引中 → 完了にする</button>` : `<span class="stbtn done">取引完了</span>`;
   return `<div class="srow" data-act="edit" data-id="${esc(it.id)}" data-st="${esc(it.st)}">
     ${thumbHTML(it.thumb)}
     <div style="min-width:0"><div class="nm">${esc(it.name || "（名称未設定）")}</div>
-      <div class="meta"><span>${esc(date)}</span><span class="pf">純利益 ${yen(c.profit)}</span><span class="badge">${esc(chName(it.soldCh))}</span>${stb}</div></div>
+      <div class="meta"><span>${esc(date)}</span><span class="pf">純利益 ${yen(c.profit)}</span></div></div>
+    <div class="side" data-side>${stb}${chChip(it.soldCh)}</div>
     <div class="six" data-six>
       <div><span>販売価格</span><b data-k="price">${yen(c.price)}</b></div>
       <div><span>仕入額</span><b data-k="cost">${yen(c.cost)}</b></div>
@@ -901,7 +925,8 @@ function listedRow(it){
   return `<div class="srow est" data-act="edit" data-id="${esc(it.id)}" data-st="listed">
     ${thumbHTML(it.thumb)}
     <div style="min-width:0"><div class="nm">${esc(it.name || "（名称未設定）")}</div>
-      <div class="meta"><span>出品 ${esc(normDate(it.listDate) || "—")}</span><span class="badge estl">見込み</span><span class="pf" data-k="estProfit">見込み純利益 ${hasLP ? yen(c.profit) : "—"}</span><span class="badge">${esc(chName(c.ch))}想定</span></div></div>
+      <div class="meta"><span>出品 ${esc(normDate(it.listDate) || "—")}</span><span class="pf" data-k="estProfit">見込み純利益 ${hasLP ? yen(c.profit) : "—"}</span></div></div>
+    <div class="side" data-side><span class="stbtn est">出品中・見込み</span>${chChip(c.ch, "想定")}</div>
     <div class="six" data-six>
       <div><span>出品価格</span><b data-k="listPrice">${hasLP ? yen(c.price) : "—"}</b></div>
       <div><span>仕入額</span><b data-k="cost">${yen(c.cost)}</b></div>
@@ -936,7 +961,9 @@ function download(name, text, type){
 const MASTER_F = [["stock","仕入れ済み"],["listed","出品中"],["deal","取引中"],["sold","売却済み"],["all","すべて"]];
 // 在庫タブは 仕入れ済み〜売却済み だけ（候補 cand と、st が未知の値のものは出さない）。束ねられたメンバーは親の中に入るので出さない
 const MASTER_ST = ["stock","listed","deal","sold"];
-function masterRows(){ const mem = memberSet(); return S.items.filter(it => MASTER_ST.includes(it.st) && !mem.has(it) && (UI.masterF === "all" || it.st === UI.masterF)); }
+// v1.6.0 §1 検索（商品名・メモの部分一致、大文字小文字を区別しない）と状態チップは AND
+function masterRows(){ const mem = memberSet(), q = String(UI.masterQ || "").trim().toLowerCase();
+  return S.items.filter(it => MASTER_ST.includes(it.st) && !mem.has(it) && (UI.masterF === "all" || it.st === UI.masterF) && (!q || String(it.name ?? "").toLowerCase().includes(q) || String(it.memo ?? "").toLowerCase().includes(q))); }
 function gridPrice(it){
   if ((it.st === "sold" || it.st === "deal") && num(it.soldPrice)) return num(it.soldPrice);
   if (num(it.listPrice)) return num(it.listPrice);
@@ -954,12 +981,13 @@ function renderMaster(){
     : `<button class="btn pri scanbtn" data-act="regOpen" id="scanEntry">${SCAN_SVG}読み取りで登録（バーコード / ISBN）</button>
     <div class="invsub">仕入れ登録はこの入口から。手入力での登録もここから選べます</div>
     <button class="btn wide" data-act="selOn" style="margin-bottom:10px">束ねる（複数選択）</button>`}
+  ${SEARCH_SVG("masterQ", UI.masterQ)}
   <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}</div>
   <div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
   <div class="grid" id="masterGrid">${rows.map(it => {
     const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock";
     return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div>${it.st === "sold" ? "" : `<div class="pp" data-pp>${esc(phBadge(it))}</div>`}</div></button>`; }).join("")}</div>
-  ${rows.length ? "" : `<div class="empty-note">該当する商品がありません</div>`}
+  ${rows.length ? "" : `<div class="empty-note">${String(UI.masterQ || "").trim() ? "検索に一致する商品がありません" : "該当する商品がありません"}</div>`}
   ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
   fillThumbs($view);
 }
@@ -2152,6 +2180,7 @@ document.addEventListener("click", async (e) => {
     case "mnext": UI.month = addMonth(UI.month, 1); render(); break;
     case "tip": { const L = chartSVG.last, i = Number(el.dataset.i), s = L.series[i];
       document.getElementById("chartTip").textContent = `${mLabel(L.months[i])}：売上 ${yen(s.sales)}／コスト ${yen(s.cost)}／純利益 ${yen(s.profit)}`; break; }
+    case "salesNew": openNew(); break;
     case "csv": download("seller_sales_" + today() + ".csv", buildCSV(csvRows()), "text/csv;charset=utf-8"); break;
     case "complete": { e.stopPropagation(); const it = S.items.find(x => x.id === el.dataset.id);
       if (it){ it.st = "sold"; if (!it.soldDate) it.soldDate = today(); await saveState(); render(); toast("取引完了にしました"); } break; }
@@ -2213,10 +2242,10 @@ document.addEventListener("click", async (e) => {
 });
 document.addEventListener("input", (e) => {
   if (e.target.closest && e.target.closest(".pst")){ memoInput(e.target); return; }
-  if (e.target.id === "salesQ"){
-    UI.salesQ = e.target.value;
-    const pos = e.target.selectionStart; renderSales();
-    const n = document.getElementById("salesQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {}
+  if (e.target.id === "salesQ" || e.target.id === "masterQ"){
+    const id = e.target.id; UI[id] = e.target.value;
+    const pos = e.target.selectionStart; (id === "salesQ" ? renderSales : renderMaster)();
+    const n = document.getElementById(id); n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {}
     return;
   }
   if (e.target.closest && e.target.closest("#edForm")){
