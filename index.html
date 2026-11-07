@@ -325,7 +325,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.6.1";
+const APP_VER = "1.6.2";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -333,7 +333,7 @@ const ST_ORDER = ["stock","listed","deal","sold","cand"];
 const CH_KEYS = ["m","y","r","a"];
 const DEFAULT_SETTINGS = {ch:{m:{name:"メルカリ",fee:10,ship:160},y:{name:"Yahoo!フリマ",fee:5,ship:160},r:{name:"ラクマ",fee:10,ship:150},a:{name:"ヤフオク",fee:10,ship:160}},pack:30,target:30};
 const COND_CHIPS = ["帯あり","初版","特典つき","やや傷あり","傷あり","日焼け","良好"];
-const SHIP_METHODS = ["ゆうパケット","ゆうパケットポスト","ゆうパケットプラス","ネコポス","宅急便コンパクト","宅急便","ゆうパック","定形外郵便","クリックポスト","レターパック","その他"];
+const SHIP_METHODS = ["ゆうパケット","ゆうパケットポスト","ゆうパケットポストmini","ゆうパケットプラス","ネコポス","宅急便コンパクト","宅急便","ゆうパック","定形外郵便","クリックポスト","レターパック","その他"];
 const KINDS = {sale:"売上", buy:"仕入のみ"};
 
 /* ---------- IndexedDB（meta=状態1件 / imgs=写真） ---------- */
