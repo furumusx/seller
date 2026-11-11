@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <!-- v1.3.0 §3：背景ぼかしの被写体切り抜き（POST と同じ MediaPipe）を読み込むためだけに、固定バージョンのライブラリとモデルの置き場所に限って取得を許可する（データは送らない） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://accounts.google.com/gsi/client; worker-src blob: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; style-src 'unsafe-inline' https://accounts.google.com/gsi/style; frame-src https://accounts.google.com/gsi/; img-src data: blob:; media-src blob: mediastream:; connect-src https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite https://accounts.google.com/gsi/ https://www.googleapis.com/drive/v3/ https://www.googleapis.com/upload/drive/v3/; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://accounts.google.com/gsi/client; worker-src blob: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/; style-src 'unsafe-inline' https://accounts.google.com/gsi/style; frame-src https://accounts.google.com/gsi/; img-src data: blob:; media-src blob: mediastream:; connect-src https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/ https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite https://accounts.google.com/gsi/ https://www.googleapis.com/drive/v3/ https://www.googleapis.com/upload/drive/v3/ https://api.openbd.jp/v1/get; form-action 'none'; base-uri 'none'">
+<!-- v1.7.0 §4 読み取りの書誌引き：端末内の書誌に無い ISBN（978…）だけ openBD（https://api.openbd.jp/v1/get）に問い合わせる。送るのは ISBN だけ -->
 <meta name="referrer" content="no-referrer">
 <title>セラー</title>
 <style>
@@ -210,6 +211,37 @@ details.fold>.in{padding:0 12px 12px}
 .scanbtn{width:100%;height:50px;font-size:14.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .scanbtn svg{width:19px;height:19px}
 .invsub{text-align:center;margin:7px 0 10px;font-size:12px;color:var(--mute)}
+/* v1.7.0 §5 在庫のグリッド⇔リスト切り替え・リスト行／§3・§7 小さな印／§9 販路URLのリンク／§1 下書き */
+.vsw{display:grid;grid-template-columns:1fr 1fr;width:max-content;max-width:100%;border:1px solid var(--line2);border-radius:9px;overflow:hidden;margin-left:auto;align-self:center}
+.vsw button{border:0;background:#fff;color:var(--sub);min-height:32px;padding:0 12px;font-size:13px;font-weight:600}
+#masterGrid .cell{align-self:start}
+.vsw button.on{background:var(--ink);color:#fff}
+.mrows{display:flex;flex-direction:column;gap:6px}
+.lrow{background:var(--card);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07);padding:8px 10px;min-width:0;cursor:pointer}
+.lrow.sel{outline:3px solid var(--ink);outline-offset:-3px}
+.lrow.off{opacity:.35}
+.lrow .l1{display:flex;align-items:baseline;gap:8px;min-width:0}
+.lrow .ln{flex:1;min-width:0;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .lp{flex:none;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+.lrow .l2{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--sub);margin-top:3px;min-width:0;font-variant-numeric:tabular-nums}
+.mk{display:inline-block;font-size:10.5px;font-weight:700;padding:0 6px;border-radius:8px;border:1px solid var(--ink);color:var(--ink);background:#fff;white-space:nowrap}
+.mk.nf{border-style:dashed;color:var(--sub);border-color:var(--sub)}
+.mk.vc{background:var(--ink);color:#fff}
+.cell .mks{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;min-width:0;overflow:hidden}
+a.ulk{font-size:12px;font-weight:700;color:var(--ink);text-decoration:underline;white-space:nowrap;padding:2px 0}
+.urow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:end}
+.urow a.ulk{min-height:40px;display:flex;align-items:center}
+.tgl{display:flex;align-items:center;gap:8px;font-size:14px;min-height:40px}
+.tgl input{width:22px;height:22px;accent-color:var(--ink);flex:none}
+.dseg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--ink);border-radius:9px;overflow:hidden;margin-bottom:8px}
+.dseg button{border:0;background:#fff;color:var(--ink);min-height:38px;font-weight:600;font-size:13px}
+.dseg button.on{background:var(--ink);color:#fff}
+.dseg button:disabled{opacity:.45}
+.drow{background:var(--card);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07);padding:9px 10px;margin-bottom:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;cursor:pointer;min-width:0}
+.drow .dn{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.drow .dt{grid-column:1/2;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.drow .dside{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.missing{border:1px dashed var(--ink);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:8px}
 .cell .pp{font-size:10.5px;color:var(--sub);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* v1.3.0 §3 写真：POST 統合版の CSS（撮影画面・写真の管理・編集・背景ぼかし）を .pst の中だけに適用。
    色だけはセラーのモノクロに合わせる（POST の青・緑・黄のアクセント → 黒・グレー。黄色バナーは書き出す画像の中だけ） */
@@ -325,7 +357,7 @@ details.fold>.in{padding:0 12px 12px}
 <div id="psheet" class="pst" hidden><div class="sh"><h3 id="shT"></h3><button class="btn btn-ghost sm" data-act="closeSheet">閉じる</button></div><div class="sb" id="shB"></div></div>
 <script>
 "use strict";
-const APP_VER = "1.6.2";
+const APP_VER = "1.7.0";
 const $ = s => document.querySelector(s);
 const DB_NAME = "seller_app";
 const ST_LABEL = {stock:"仕入れ済み", listed:"出品中", deal:"取引中", sold:"売却済み", cand:"候補"};
@@ -333,6 +365,43 @@ const ST_ORDER = ["stock","listed","deal","sold","cand"];
 const CH_KEYS = ["m","y","r","a"];
 const DEFAULT_SETTINGS = {ch:{m:{name:"メルカリ",fee:10,ship:160},y:{name:"Yahoo!フリマ",fee:5,ship:160},r:{name:"ラクマ",fee:10,ship:150},a:{name:"ヤフオク",fee:10,ship:160}},pack:30,target:30};
 const COND_CHIPS = ["帯あり","初版","特典つき","やや傷あり","傷あり","日焼け","良好"];
+/* v1.7.0 §6 状態チップは種類（カテゴリ cat の文字）ごとに切り替える。cat は自由入力なので文字で判定し、どれにも当たらなければ本・漫画 */
+const GENRES = {book:"本・漫画", tcg:"トレカ", media:"CD・DVD", game:"ゲーム"};
+const COND_SETS = {book: COND_CHIPS,
+  tcg: ["白欠けあり","角傷あり","表面傷あり","縁傷あり","美品","良好"],
+  media: ["帯あり","盤面傷あり","ジャケット傷み","歌詞カード欠け","ケース割れ","良好"],
+  game: ["箱あり","説明書あり","動作確認済","盤面傷あり","ラベル傷み","良好"]};
+function genreOfCat(cat){ const c = String(cat ?? "").normalize("NFKC");
+  if (/トレカ|トレーディングカード|カード|ポケカ|遊戯王|PSA|TCG/i.test(c)) return "tcg";
+  if (/CD|DVD|Blu-?ray|ブルーレイ|BD|サントラ|音楽|映像/i.test(c)) return "media";
+  if (/ゲーム|GAME|ソフト|Switch|スイッチ|PS[1-5]|プレステ|3DS|ファミコン/i.test(c)) return "game";
+  return "book"; }
+const genreOf = it => genreOfCat(it && it.cat);
+/* v1.7.0 §7 トレカの形態（PSA10／素体／その他鑑定）。未選択は "" */
+const TCG_FORMS = ["PSA10","素体","その他鑑定"];
+function tcgFormLabel(it){ const f = String((it && it.tcgForm) || ""); return TCG_FORMS.includes(f) ? f : "形態未選択"; }
+/* v1.7.0 §1 出品下書きの状態（待ち→完成→出品済み）。出品済みかどうかはステータス st（公式の出品・売却記録）を正とする */
+const DRAFT_ST = {wait:"待ち", done:"完成", listed:"出品済み"};
+const DRAFT_KEYS = ["wait","done","listed"];
+function draftOf(it){ if (["listed","deal","sold"].includes(it && it.st)) return "listed"; return it && it.draftSt === "done" ? "done" : "wait"; }
+/* v1.7.0 §9 販路ごとの商品ページURL。旧 listUrl は売却先 soldCh の欄に寄せて表示する（元の listUrl は消さない） */
+const URL_CH = [["m","urlM"],["y","urlY"],["r","urlR"]];
+function safeUrl(u){ const s = String(u ?? "").trim(); if (!s) return ""; try { const x = new URL(s); return (x.protocol === "https:" || x.protocol === "http:") && x.hostname ? x.href : ""; } catch (e) { return ""; } }
+function urlRaw(it, k){ const f = (URL_CH.find(x => x[0] === k) || [])[1]; if (!f) return ""; const v = String(it[f] ?? "").trim(); if (v) return v; return it.soldCh === k ? String(it.listUrl ?? "").trim() : ""; }
+function legacyUrlOther(it){ const v = String(it.listUrl ?? "").trim(); return v && !URL_CH.some(x => x[0] === it.soldCh) ? v : ""; }
+function urlLinks(it){ const out = URL_CH.map(([k]) => { const u = safeUrl(urlRaw(it, k)); return u ? `<a class="ulk" href="${esc(u)}" target="_blank" rel="noopener noreferrer" data-url="${k}">${esc(chName(k))}↗</a>` : ""; }).filter(Boolean);
+  const o = safeUrl(legacyUrlOther(it)); if (o) out.push(`<a class="ulk" href="${esc(o)}" target="_blank" rel="noopener noreferrer" data-url="other">旧URL↗</a>`); return out.join(""); }
+/* v1.7.0 §2 申告に要る項目の未入力（売却済み：販売価格・送料・梱包費・手数料の根拠／仕入れ：仕入先）。手数料 soldFee は保存時に率から自動計算するので、率の根拠（販路か手数料率）を見る */
+function hasVal(v){ return v !== undefined && v !== null && String(v).trim() !== ""; }
+function missingOf(d){ const m = [];
+  if (d.st === "sold"){
+    if (!hasVal(d.soldPrice) || num(d.soldPrice) <= 0) m.push("販売価格");
+    if (!hasVal(d.ship)) m.push("送料");
+    if (!hasVal(d.pack)) m.push("梱包資材費");
+    if (!hasVal(d.feeRate) && !S.settings.ch[d.soldCh]) m.push("手数料（販路または手数料率）");
+  }
+  if (["stock","listed","deal","sold"].includes(d.st) && !hasVal(d.store)) m.push("仕入先");
+  return m; }
 const SHIP_METHODS = ["ゆうパケット","ゆうパケットポスト","ゆうパケットポストmini","ゆうパケットプラス","ネコポス","宅急便コンパクト","宅急便","ゆうパック","定形外郵便","クリックポスト","レターパック","その他"];
 const KINDS = {sale:"売上", buy:"仕入のみ"};
 
@@ -388,6 +457,8 @@ function cleanLocal(v){
     blur: ["none","w","m","s"].includes(s.blur) ? s.blur : LOCAL_DEF.blur,
     // v1.3.0 §3 POST の S.settings.autoBlur（撮影後に背景ぼかし）と S.models（お手本）に当たる端末内の設定
     autoBlur: s.autoBlur === true,
+    // v1.7.0 §5 在庫の表示（grid／list）。端末ごとに覚える
+    masterView: s.masterView === "list" ? "list" : "grid",
     models: isPlainObj(s.models) ? Object.fromEntries(Object.entries(s.models).filter(([k, v]) => typeof k === "string" && typeof v === "string")) : {}};
 }
 function saveLocal(){ return idbPut("meta", "local", LOC); }
@@ -873,11 +944,13 @@ function salesRows(){
 }
 // CSV は v1.0.0 と同じ対象（売却済み＋取引中）。出品中は含めない
 function csvRows(){ return salesRows().filter(it => it.st === "sold" || it.st === "deal"); }
-// 出品中の見込み：出品価格を販売価格とみなす。販路が未設定ならメルカリ（m）想定、送料・梱包費が空なら販路の送料・梱包費の初期値で見積もる
+// 出品中の見込み：販売価格で見積もる（v1.7.0 §8 価格は販売価格に一本化。販売価格が空の旧データだけ、残っている出品価格 listPrice を使う）。
+// 販路が未設定ならメルカリ（m）想定、送料・梱包費が空なら販路の送料・梱包費の初期値で見積もる
+function priceOf(it){ return num(it.soldPrice) > 0 ? num(it.soldPrice) : num(it.listPrice); }
 function estCalc(it){
   const ck = S.settings.ch[it.soldCh] ? it.soldCh : "m", ch = S.settings.ch[ck];
   const has = v => v !== undefined && v !== null && v !== "";
-  return Object.assign(calc({soldPrice: it.listPrice, cost: it.cost, ship: has(it.ship) ? it.ship : ch.ship, pack: has(it.pack) ? it.pack : S.settings.pack, other: it.other, feeRate: it.feeRate, soldCh: ck}), {ch: ck});
+  return Object.assign(calc({soldPrice: priceOf(it), cost: it.cost, ship: has(it.ship) ? it.ship : ch.ship, pack: has(it.pack) ? it.pack : S.settings.pack, other: it.other, feeRate: it.feeRate, soldCh: ck}), {ch: ck});
 }
 function renderSales(){
   // v1.6.0 §2 セラーブック風：上部ピル（CSV出力／＋）→ 検索 → 「全ての商品 ◯個」→ 取引未完了 → 出品中 → 月別
@@ -926,14 +999,14 @@ function saleRow(it){
     </div></div>`;
 }
 function listedRow(it){
-  const c = estCalc(it), hasLP = num(it.listPrice) > 0;
+  const c = estCalc(it), hasLP = priceOf(it) > 0;
   return `<div class="srow est" data-act="edit" data-id="${esc(it.id)}" data-st="listed">
     ${thumbHTML(it.thumb)}
     <div style="min-width:0"><div class="nm">${esc(it.name || "（名称未設定）")}</div>
       <div class="meta"><span>出品 ${esc(normDate(it.listDate) || "—")}</span><span class="pf" data-k="estProfit">見込み純利益 ${hasLP ? yen(c.profit) : "—"}</span></div></div>
     <div class="side" data-side><span class="stbtn est">出品中・見込み</span>${chChip(c.ch, "想定")}</div>
     <div class="six" data-six>
-      <div><span>出品価格</span><b data-k="listPrice">${hasLP ? yen(c.price) : "—"}</b></div>
+      <div><span>販売価格</span><b data-k="listPrice">${hasLP ? yen(c.price) : "—"}</b></div>
       <div><span>仕入額</span><b data-k="cost">${yen(c.cost)}</b></div>
       <div><span>送料(想定)</span><b data-k="ship">${yen(c.ship)}</b></div>
       <div><span>手数料(想定)</span><b data-k="fee">${hasLP ? yen(c.fee) : "—"}</b></div>
@@ -970,10 +1043,14 @@ const MASTER_ST = ["stock","listed","deal","sold"];
 function masterRows(){ const mem = memberSet(), q = String(UI.masterQ || "").trim().toLowerCase();
   return S.items.filter(it => MASTER_ST.includes(it.st) && !mem.has(it) && (UI.masterF === "all" || it.st === UI.masterF) && (!q || String(it.name ?? "").toLowerCase().includes(q) || String(it.memo ?? "").toLowerCase().includes(q))); }
 function gridPrice(it){
-  if ((it.st === "sold" || it.st === "deal") && num(it.soldPrice)) return num(it.soldPrice);
-  if (num(it.listPrice)) return num(it.listPrice);
-  return num(it.cost);
+  // v1.7.0 §8 販売価格を優先（旧データで販売価格が空なら出品価格 listPrice、どちらも無ければ仕入額）
+  const p = priceOf(it); return p > 0 ? p : num(it.cost);
 }
+// v1.7.0 §3・§7 一覧の小さな印：トレカの形態（未選択も明示）／証憑あり
+function markHTML(it){ let h = "";
+  if (genreOf(it) === "tcg"){ const f = tcgFormLabel(it); h += `<span class="mk${f === "形態未選択" ? " nf" : ""}" data-k="form">${esc(f)}</span>`; }
+  if (it.voucher === true) h += `<span class="mk vc" data-k="voucher">証憑あり</span>`;
+  return h; }
 function bundleBadge(it, n){ return n ? `<span class="bd">${it.mixed ? "まとめ" : "セット"} ${n}点</span>` : ""; }
 function renderMaster(){
   const sel = UI.selMode, nSel = Object.keys(UI.sel).length;
@@ -984,7 +1061,7 @@ function renderMaster(){
     <div class="invsub">仕入れ登録はこの入口から。手入力での登録もここから選べます</div>
     <button class="btn wide" data-act="selOn" style="margin-bottom:10px">束ねる（複数選択）</button>`}
   ${SEARCH_SVG("masterQ", UI.masterQ)}
-  <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}</div>
+  <div class="chips" id="masterF">${MASTER_F.map(([k, l]) => `<button class="chip ${UI.masterF === k ? "on" : ""}" data-act="mf" data-f="${k}" ${sel && k !== "stock" ? "disabled" : ""}>${l}</button>`).join("")}<div class="vsw" id="masterView" role="group" aria-label="表示の切り替え">${[["grid","グリッド"],["list","リスト"]].map(([k, l]) => `<button class="${LOC.masterView === k ? "on" : ""}" data-act="mview" data-v="${k}" aria-pressed="${LOC.masterView === k}">${l}</button>`).join("")}</div></div>
   <div id="masterRes">${masterResHTML()}</div>
   ${sel ? `<div style="height:64px"></div><div class="selbar" id="selBar"><span id="selN">${nSel}件 選択中</span><button class="btn" data-act="selOff">やめる</button><button class="btn pri" data-act="bundleMake" ${nSel >= 2 ? "" : "disabled"}>束ねる</button></div>` : ""}`;
   fillThumbs($view);
@@ -995,10 +1072,17 @@ function masterResHTML(){
   const rows = masterRows(), sel = UI.selMode;
   const cnt = {}; for (const m of memberSet()) cnt[String(m.inSet)] = (cnt[String(m.inSet)] || 0) + 1;
   const costSum = rows.reduce((s, it) => s + num(it.cost), 0);
-  return `<div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>
-  <div class="grid" id="masterGrid">${rows.map(it => {
-    const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock";
-    return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div>${it.st === "sold" ? "" : `<div class="pp" data-pp>${esc(phBadge(it))}</div>`}</div></button>`; }).join("")}</div>
+  const head = `<div class="invsum"><span id="masterCount">${rows.length}件</span><span>仕入額の合計 <b id="masterCost">${yen(costSum)}</b></span></div>`;
+  // v1.7.0 §5 リスト表示（写真枠なし・1件1行）。§10 形態（トレカ）・証憑・販路URLのリンクもここに出す
+  if (LOC.masterView === "list") return head + `<div class="mrows" id="masterList">${rows.map(it => {
+    const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock", p = priceOf(it);
+    return `<div class="lrow${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" role="button" tabindex="0" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>
+      <div class="l1"><span class="ln">${esc(it.name || "（名称未設定）")}</span><span class="lp" data-k="price">${p > 0 ? yen(p) : "—"}</span></div>
+      <div class="l2"><span class="badge" data-k="st">${esc(ST_LABEL[it.st] || it.st || "")}</span>${markHTML(it)}${cnt[id] ? `<span class="badge">${it.mixed ? "まとめ" : "セット"} ${cnt[id]}点</span>` : ""}<span data-k="cost">仕入 ${yen(num(it.cost))}</span>${urlLinks(it)}</div></div>`; }).join("")}</div>
+  ${rows.length ? "" : `<div class="empty-note">${String(UI.masterQ || "").trim() ? "検索に一致する商品がありません" : "該当する商品がありません"}</div>`}`;
+  return head + `<div class="grid" id="masterGrid">${rows.map(it => {
+    const id = String(it.id), on = !!UI.sel[id], can = it.st === "stock", mk = markHTML(it);
+    return `<button class="cell${sel && on ? " sel" : ""}${sel && !can ? " off" : ""}" data-act="${sel ? "selTap" : "edit"}" data-id="${esc(id)}" data-st="${esc(it.st)}" ${sel ? `aria-pressed="${on}"` : ""}>${thumbHTML(it.thumb)}${bundleBadge(it, cnt[id])}${sel && can ? `<span class="ck" aria-hidden="true"></span>` : ""}<div class="lb"><div class="pr">${yen(gridPrice(it))}</div><div class="cn">${esc(it.name || "（名称未設定）")}</div>${mk ? `<div class="mks">${mk}</div>` : ""}${it.st === "sold" ? "" : `<div class="pp" data-pp>${esc(phBadge(it))}</div>`}</div></button>`; }).join("")}</div>
   ${rows.length ? "" : `<div class="empty-note">${String(UI.masterQ || "").trim() ? "検索に一致する商品がありません" : "該当する商品がありません"}</div>`}`;
 }
 
@@ -1104,7 +1188,7 @@ async function unbundleGo(){
 /* ---------- v1.3.0 §2 読み取りで登録：SSS 台帳版の regOpen / regParams / regDup / regAdd / regPendShow / regCode と
    startScan / stopScan / loop / onCode / 内蔵 EAN-13 解読をそのまま移植（画面構成・文言・判定・操作の流れを SSS と同一にする）。
    セラー側で変えたのは：保存先（セラーの items）、入口の置き場所（在庫タブ）、書誌引き（下記）、色（モノクロ）、絵文字を外したこと。
-   書誌引き：SSS の fetchBiblio は取り込み済み biblio に無いと openBD に問い合わせるが、セラーは外部通信をしない方針のため biblio だけを引く ---------- */
+   書誌引き：v1.3.0〜v1.6.2 は biblio だけを引いていたが、v1.7.0 §4 で SSS と同じく biblio に無ければ openBD に問い合わせる形に戻した ---------- */
 const BOOK = "本・コミック";
 const catOf = x => String((x && x.cat) || "").trim() || BOOK; const isBook = x => catOf(x) === BOOK;
 function ean13ok(c){ if (!/^\d{13}$/.test(c)) return false; let s = 0; for (let i = 0; i < 12; i++) s += (+c[i]) * (i % 2 ? 3 : 1); return (10 - s % 10) % 10 === +c[12]; }
@@ -1133,10 +1217,36 @@ function biblioToItem(b, code){
   const pick = (...ks) => { for (const k of ks){ const v = b[k]; if (Array.isArray(v) && v.length) return v.join("、"); if (v !== undefined && v !== null && v !== "") return String(v); } return ""; };
   return {code: normIsbn(code), name: pick("title","name"), author: pick("author","authors"), pub: pick("pub","publisher"), vols: pick("vols"), cat: pick("cat"), cover: pick("cover")};
 }
+/* v1.7.0 §4 openBD フォールバック（旧SSSと同じ方式）：端末内の書誌に無いときだけ問い合わせ、当たれば biblio に貯めて次回から端末内で当てる。
+   対象は 978 で始まる正しい ISBN-13 のみ（191… の価格コード等は問い合わせない）。通信失敗・該当なしは従来どおり「見つかりません」 */
+const OPENBD = "https://api.openbd.jp/v1/get";
+const OPENBD_TIMEOUT = 8000;
+function isOpenbdTarget(c){ return /^978\d{10}$/.test(c) && ean13ok(c); }
+function cleanStr(v, max){ return typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : ""; }
+async function openbdGet(isbn){
+  if (!isOpenbdTarget(isbn) || typeof fetch !== "function") return null;
+  const ac = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ac ? setTimeout(() => ac.abort(), OPENBD_TIMEOUT) : null;
+  try {
+    const r = await fetch(OPENBD + "?isbn=" + isbn, {signal: ac ? ac.signal : undefined, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer"});
+    if (!r || !r.ok) return null;
+    const j = await r.json();
+    const s = Array.isArray(j) && isPlainObj(j[0]) && isPlainObj(j[0].summary) ? j[0].summary : null; if (!s) return null;
+    let title = cleanStr(s.title, 200); if (!title) return null;
+    const vol = cleanStr(s.volume, 20);
+    if (vol && !title.includes(vol)) title += " " + (/^\d+$/.test(vol) ? vol + "巻" : vol);
+    const cover = cleanStr(s.cover, 300);
+    return {title, author: cleanStr(s.author, 120), pub: cleanStr(s.publisher, 80), cover: /^https:\/\//.test(cover) ? cover : "", src: "openbd", at: today()};
+  } catch (e) { return null; }
+  finally { if (timer) clearTimeout(timer); }
+}
 async function fetchBiblio(isbn){
-  const b = lookupBiblio(isbn); if (!b) return {none:true};
-  const o = biblioToItem(b, isbn); if (!o.name) return {none:true};
-  return {title:o.name, author:o.author, pub:o.pub, cover:o.cover};
+  const b = lookupBiblio(isbn);
+  if (b){ const o = biblioToItem(b, isbn); if (o.name) return {title:o.name, author:o.author, pub:o.pub, cover:o.cover}; }
+  const c = normCode(isbn); if (!isOpenbdTarget(c)) return {none:true};
+  const r = await openbdGet(c); if (!r) return {none:true};
+  S.biblio[c] = r; saveState().catch(() => {});
+  return {title:r.title, author:r.author, pub:r.pub, cover:r.cover};
 }
 /* ---------- 一覧：読み取りで仕入済みに追加（定額で何冊も買うとき用）［SSS と同じ］ ---------- */
 const SCAN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M7 12h10"/></svg>';
@@ -1168,12 +1278,14 @@ function regNewItem(o){ const c = sssNum(o.cost);
   return Object.assign(blankItem(), {cat: BOOK, created: new Date().toISOString(),
     hist: [{at: normDate(o.date) || today(), kind: "reg", text: `${(o.st || "cand") === "cand" ? "候補として登録" : "仕入れ登録"}${isFinite(c) ? `（原価 ${yenT(c)}）` : ""}`, src: "manual"}]}, o); }
 function regAdd(o){ const P = regParams(); if (!P) return false; const it = regNewItem({name: o.title || o.code, code: o.code || "", author: o.author || "", pub: o.pub || "", cover: o.cover || "", st: "stock", cost: P.p, date: P.d, store: P.st});
-  it.hist[0].text += o.code ? `・読み取り（${o.code}）` : "・手入力"; S.items.unshift(it); saveState().catch(e => toast("保存できませんでした: " + (e && e.message || e))); REG.log.unshift(it.name); const l = $("#regLog"); if (l) l.innerHTML = REG.log.map(n => `✓ ${esc(n)}`).join("<br>"); toast(`登録：${it.name}`); return true; }
+  it.hist[0].text += o.code ? `・読み取り（${o.code}）` : "・手入力"; S.items.unshift(it); saveState().catch(e => toast("保存できませんでした: " + (e && e.message || e)));
+  // v1.7.0 §2 仕入元が空のまま登録したときは、記録と通知で分かるようにする（黙って欠落させない）
+  const noStore = !hasVal(P.st); REG.log.unshift(it.name + (noStore ? "（仕入元：未入力）" : "")); const l = $("#regLog"); if (l) l.innerHTML = REG.log.map(n => `✓ ${esc(n)}`).join("<br>"); toast(`登録：${it.name}${noStore ? "（仕入元が未入力です）" : ""}`); return true; }
 function regPendShow(){ const e = $("#regPend"); if (!e) return; const P = REG && REG.pend; if (!P){ e.innerHTML = ""; return; }
   if (P.nobib) e.innerHTML = `<div class="banner mt2" id="regPendBox" style="flex-wrap:wrap">書誌が見つかりませんでした（${esc(P.code)}）。商品名を入れて登録できます。<input id="rgPendName" class="inline-in" style="width:100%;text-align:left" placeholder="商品名"><button data-act="regPendManual">この名前で登録</button><button data-act="regPendSkip">スキップ</button></div>`;
   else e.innerHTML = `<div class="banner mt2" id="regPendBox" style="flex-wrap:wrap">同じ巻がすでに在庫にあります：${esc(P.dups.map(d => d.name).join("、"))}<br>読み取った本：${esc(P.title)}<button data-act="regPendOk">それでも登録</button><button data-act="regPendSkip">スキップ</button></div>`; }
-async function regCode(raw){ if (!REG || REG.pend) return; if (!regParams()) return; const code = normCode(raw);
-  let b = S.biblio[code]; if (!b || !b.title) b = await fetchBiblio(code); if (!REG) return;
+async function regCode(raw){ if (!REG || REG.pend) return; if (REG.busy){ toast("前の本の書誌を問い合わせ中です。少し待ってから読み取ってください"); return; } if (!regParams()) return; const code = normCode(raw);
+  let b = S.biblio[code]; if (!b || !b.title){ const R0 = REG; if (!lookupBiblio(code) && isOpenbdTarget(code)) toast("書誌を問い合わせ中…"); R0.busy = true; try { b = await fetchBiblio(code); } finally { R0.busy = false; } } if (!REG) return;
   if (!b || !b.title){ REG.pend = {code, nobib:true}; regPendShow(); return; }
   const o = {code, title: b.title, author: b.author, pub: b.pub, cover: b.cover}; const d = regDup(code, b.title);
   if (d.length){ REG.pend = Object.assign(o, {dups: d}); regPendShow(); return; } regAdd(o); }
@@ -1262,13 +1374,17 @@ function openNew(){
     <div class="f"><label>ISBN（手入力）</label><input id="isbnIn" inputmode="numeric" autocomplete="off" placeholder="978…"></div>
     <div class="acts"><button class="btn" data-act="mclose">閉じる</button><button class="btn" data-act="manual">書誌なしで手入力</button><button class="btn pri" data-act="isbnGo">ISBNで登録</button></div>`);
 }
-function isbnGo(){
+async function isbnGo(){
   const code = normIsbn(document.getElementById("isbnIn").value);
   if (!code){ toast("ISBNを入力してください"); return; }
   const b = lookupBiblio(code);
-  closeModal();
-  if (b){ openEditor(null, biblioToItem(b, code)); toast("書誌を自動入力しました"); }
-  else { openEditor(null, {code}); toast("書誌が見つかりません。手入力してください"); }
+  if (b){ closeModal(); openEditor(null, biblioToItem(b, code)); toast("書誌を自動入力しました"); return; }
+  // v1.7.0 §4 端末内に無ければ openBD（978… のみ）
+  const c = normCode(code);
+  if (isOpenbdTarget(c)){ const btn = document.querySelector('[data-act="isbnGo"]'); if (btn) btn.disabled = true; toast("書誌を問い合わせ中…");
+    const r = await fetchBiblio(c);
+    if (!r.none){ closeModal(); openEditor(null, {code: c, name: r.title, author: r.author || "", pub: r.pub || "", cover: r.cover || ""}); toast("書誌を自動入力しました"); return; } }
+  closeModal(); openEditor(null, {code}); toast("書誌が見つかりません。手入力してください");
 }
 
 /* 4-4 編集画面 */
@@ -1291,7 +1407,13 @@ function openEditor(id, preset){
   const d = draft, set = S.settings;
   const rate = feeRateOf(d);
   const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? "selected" : ""}>${esc(l)}</option>`;
-  const cats = [...new Set(S.items.map(i => i.cat).filter(Boolean).map(String))];
+  const cats = [...new Set(S.items.map(i => i.cat).filter(Boolean).map(String).concat([BOOK, "トレカ", "CD・DVD", "ゲーム"]))];
+  const stores = [...new Set((Array.isArray(set.stores) ? set.stores : []).concat(S.items.map(i => i.store)).filter(x => typeof x === "string" && x.trim()))];
+  const g = genreOf(d), dst = draftOf(d), isListedSt = ["listed","deal","sold"].includes(d.st);
+  const tagsV = Array.isArray(d.tags) ? d.tags.join(" ") : String(d.tags ?? "");
+  const urlIn = ([k, f]) => { const v = urlRaw(d, k), u = safeUrl(v);
+    return `<div class="urow"><div class="f"><label>${esc(chName(k))}のURL</label><input name="${f}" inputmode="url" autocomplete="off" placeholder="https://" value="${esc(v)}"></div><a class="ulk" id="ulk-${f}" href="${esc(u)}" target="_blank" rel="noopener noreferrer" ${u ? "" : "hidden"}>開く↗</a></div>`; };
+  const legacyO = legacyUrlOther(d), legacyOk = safeUrl(legacyO);
   // v1.2.0 §4 束ね：親なら中身の一覧と「束ねを解除」、メンバーなら所属先を表示
   const mem = isNew ? [] : membersOf(d.id);
   const parent = !isNew && d.inSet !== undefined && d.inSet !== null && d.inSet !== "" ? S.items.find(p => String(p.id) === String(d.inSet) && String(p.id) !== String(d.id)) : null;
@@ -1314,23 +1436,34 @@ function openEditor(id, preset){
       <div class="f"><label>商品名</label><input name="name" value="${esc(d.name)}"></div>
       <div class="f2"><div class="f"><label>種類（カテゴリ）</label><input name="cat" list="catList" value="${esc(d.cat)}"><datalist id="catList">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div>
       <div class="f"><label>ステータス</label><select name="st">${ST_ORDER.map(k => opt(k, ST_LABEL[k], d.st)).join("")}${d.st && !ST_LABEL[d.st] ? opt(d.st, d.st, d.st) : ""}</select></div></div></div>
-    <div class="card"><div class="sec">5. 状態チップ</div>
-      <div class="chips" id="condChips">${COND_CHIPS.map(c => `<button type="button" class="chip ${d.condChips.includes(c) ? "on" : ""}" data-act="cchip" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
+    <div class="card"><div class="sec">5. 状態チップ<span class="muted" id="condGenre">（${esc(GENRES[g])}）</span></div>
+      <div class="chips" id="condChips">${condChipsHTML(g, d.condChips)}</div></div>
+    <div class="card" id="edTcg" ${g === "tcg" ? "" : "hidden"}><div class="sec">5-2. トレカの形態</div>
+      <div class="f2"><div class="f"><label>形態（必ず選ぶ）</label><select name="tcgForm">${opt("", "未選択", d.tcgForm || "")}${TCG_FORMS.map(f => opt(f, f, d.tcgForm || "")).join("")}${d.tcgForm && !TCG_FORMS.includes(d.tcgForm) ? opt(d.tcgForm, d.tcgForm, d.tcgForm) : ""}</select></div>
+      <div class="f"><label>Cert番号（任意）</label><input name="cert" inputmode="numeric" autocomplete="off" value="${esc(d.cert ?? "")}"></div></div>
+      <div class="warn" id="tcgWarn" ${TCG_FORMS.includes(d.tcgForm) ? "hidden" : ""}>形態が未選択です（PSA10／素体／その他鑑定 を選んでください）</div></div>
     <div class="card"><div class="sec">6. 書誌</div>
       <div class="f"><label>ISBN</label><input name="code" inputmode="numeric" value="${esc(d.code)}"></div>
       <div class="f2"><div class="f"><label>収録巻</label><input name="vols" value="${esc(d.vols)}"></div><div class="f"><label>出版社</label><input name="pub" value="${esc(d.pub)}"></div></div>
       <div class="f"><label>著者</label><input name="author" value="${esc(d.author)}"></div></div>
     <div class="card"><div class="sec">7. 日程</div>
       <div class="f2"><div class="f"><label>仕入日</label><input type="date" name="date" value="${esc(normDate(d.date))}"></div><div class="f"><label>出品日</label><input type="date" name="listDate" value="${esc(normDate(d.listDate))}"></div>
-      <div class="f"><label>発送日</label><input type="date" name="shipDate" value="${esc(normDate(d.shipDate))}"></div><div class="f"><label>取引完了日（売却日）</label><input type="date" name="soldDate" value="${esc(normDate(d.soldDate))}"></div></div></div>
+      <div class="f"><label>発送日</label><input type="date" name="shipDate" value="${esc(normDate(d.shipDate))}"></div><div class="f"><label>取引完了日（売却日）</label><input type="date" name="soldDate" value="${esc(normDate(d.soldDate))}"></div></div>
+      <div class="f"><label>仕入先（店名・フリマ等）</label><input name="store" list="storeList" autocomplete="off" value="${esc(d.store ?? "")}"><datalist id="storeList">${stores.map(x => `<option value="${esc(x)}">`).join("")}</datalist></div></div>
     <div class="card"><div class="sec">8. 価格</div>
       <div class="f2"><div class="f"><label>販売価格</label><input name="soldPrice" inputmode="numeric" value="${esc(d.soldPrice)}"></div><div class="f"><label>仕入額</label><input name="cost" inputmode="numeric" value="${esc(d.cost)}"></div>
       <div class="f"><label>送料</label><input name="ship" inputmode="numeric" value="${esc(d.ship)}"></div><div class="f"><label>梱包資材費</label><input name="pack" inputmode="numeric" value="${esc(d.pack)}"></div>
       <div class="f"><label>手数料率（%）</label><input name="feeRate" inputmode="decimal" value="${esc(rate)}"></div><div class="f"><label>手数料（自動）</label><input id="edFee" readonly tabindex="-1"></div>
-      <div class="f"><label>その他経費</label><input name="other" inputmode="numeric" value="${esc(d.other ?? "")}"></div><div class="f"><label>出品価格</label><input name="listPrice" inputmode="numeric" value="${esc(d.listPrice)}"></div></div>
+      <div class="f"><label>その他経費</label><input name="other" inputmode="numeric" value="${esc(d.other ?? "")}"></div></div>
+      <div class="muted" style="margin-bottom:6px">価格は販売価格の1つだけです（出品中も同じ欄）。値下げ・交渉で変わったら最終合意額に直してください。</div>
       <div class="bigp"><div class="muted">純利益</div><div class="v" id="edProfit">¥0</div><div class="muted" id="edMargin">利益率 —</div></div></div>
     <div class="card"><div class="sec">9. プラットフォーム</div>
-      <div class="f"><select name="soldCh">${CH_KEYS.map(k => opt(k, set.ch[k].name, d.soldCh)).join("")}${d.soldCh && !CH_KEYS.includes(d.soldCh) ? opt(d.soldCh, d.soldCh, d.soldCh) : ""}${opt("", "未設定", d.soldCh || "")}</select></div></div>
+      <div class="f"><select name="soldCh">${CH_KEYS.map(k => opt(k, set.ch[k].name, d.soldCh)).join("")}${d.soldCh && !CH_KEYS.includes(d.soldCh) ? opt(d.soldCh, d.soldCh, d.soldCh) : ""}${opt("", "未設定", d.soldCh || "")}</select></div>
+      <div class="sec" style="margin-top:6px">販売ページURL（販路ごと）</div>
+      ${URL_CH.map(urlIn).join("")}
+      ${legacyO ? `<div class="muted" id="edLegacyUrl">以前の商品ページURL（販路不明）：${legacyOk ? `<a class="ulk" href="${esc(legacyOk)}" target="_blank" rel="noopener noreferrer">開く↗</a>` : esc(legacyO)}</div>` : ""}</div>
+    <div class="card"><div class="sec">9-2. 証憑</div>
+      <label class="tgl"><input type="checkbox" id="edVoucher" ${d.voucher === true ? "checked" : ""}>証憑あり（領収書・取引明細を保存済み）</label></div>
     <div class="card"><div class="sec">10. 購入者名</div>
       <div class="f"><input name="buyer" autocomplete="off" value="${esc(d.buyer)}"></div>
       <div class="muted">購入者名はこの端末内（IndexedDB）とバックアップファイルにだけ保存されます。</div></div>
@@ -1338,6 +1471,13 @@ function openEditor(id, preset){
       <div class="f"><select name="shipMethod">${SHIP_METHODS.map(m => opt(m, m, d.shipMethod)).join("")}${d.shipMethod && !SHIP_METHODS.includes(d.shipMethod) ? opt(d.shipMethod, d.shipMethod, d.shipMethod) : ""}</select></div></div>
     <div class="card"><div class="sec">12. メモ</div>
       <div class="f"><textarea name="memo" rows="3">${esc(d.memo)}</textarea></div></div>
+    <div class="card" id="edDraft"><div class="sec">13. 出品下書き</div>
+      <input type="hidden" name="draftSt" value="${dst}">
+      <div class="dseg" id="edDraftSeg">${DRAFT_KEYS.map(k => `<button type="button" class="${dst === k ? "on" : ""}" data-act="dsel" data-v="${k}" ${isListedSt && k !== "listed" ? "disabled" : ""}>${DRAFT_ST[k]}</button>`).join("")}</div>
+      <div class="muted" style="margin-bottom:8px">${isListedSt ? "ステータスが出品中以降なので「出品済み」です（出品・売却の正式な記録はステータス）。" : "「出品済み」にして保存すると、ステータスを出品中にし、出品日が空なら今日を入れます。"}</div>
+      <div class="f"><label>出品タイトル</label><input name="listTitle" autocomplete="off" value="${esc(d.listTitle ?? "")}"></div>
+      <div class="f"><label>説明文</label><textarea name="listDesc" rows="4">${esc(d.listDesc ?? "")}</textarea></div>
+      <div class="f"><label>タグ（空白区切り）</label><input name="tags" autocomplete="off" value="${esc(tagsV)}"></div></div>
   </div>
   <div class="foot"><button class="btn dan" data-act="edDelete" ${isNew ? "disabled" : ""}>削除する</button><button class="btn pri" data-act="edSave">保存する</button></div>`;
   sh.hidden = false; sh.scrollTop = 0;
@@ -1345,6 +1485,18 @@ function openEditor(id, preset){
   edRecalc(); if (phv) fillImgs();
 }
 function edVal(name){ const el = document.querySelector(`#edForm [name="${name}"]`); return el ? el.value : ""; }
+// v1.7.0 §6 種類に応じたチップ。選択中でもその種類に無いチップは出さない（＝保存時に外れる）
+function condChipsHTML(g, on){ const set = COND_SETS[g] || COND_CHIPS, sel = Array.isArray(on) ? on : [];
+  return set.map(c => `<button type="button" class="chip ${sel.includes(c) ? "on" : ""}" data-act="cchip" data-c="${esc(c)}">${esc(c)}</button>`).join(""); }
+// 種類（cat）の入力が変わったとき：チップの組を切り替え（新しい組に無いチップは選択から外す）、トレカの形態欄を出し入れする
+function edGenreSync(){ const g = genreOfCat(edVal("cat")), box = document.getElementById("condChips"); if (!box) return;
+  if (box.dataset.g === g) return; box.dataset.g = g;
+  const on = [...box.querySelectorAll(".chip.on")].map(b => b.dataset.c);
+  box.innerHTML = condChipsHTML(g, on);
+  const lab = document.getElementById("condGenre"); if (lab) lab.textContent = "（" + GENRES[g] + "）";
+  const t = document.getElementById("edTcg"); if (t) t.hidden = g !== "tcg"; }
+function edTcgWarn(){ const w = document.getElementById("tcgWarn"); if (w) w.hidden = TCG_FORMS.includes(edVal("tcgForm")); }
+function edUrlSync(name){ const a = document.getElementById("ulk-" + name); if (!a) return; const u = safeUrl(edVal(name)); if (u){ a.href = u; a.hidden = false; } else { a.removeAttribute("href"); a.hidden = true; } }
 function edRecalc(){
   const tmp = {soldPrice:edVal("soldPrice"), cost:edVal("cost"), ship:edVal("ship"), pack:edVal("pack"), other:edVal("other"), feeRate:edVal("feeRate"), soldCh:edVal("soldCh")};
   const c = calc(tmp);
@@ -1650,14 +1802,36 @@ async function phChange(e){ const el = e.target;
   if (el.id === "bnOn"){ const it = curItem(); it.banner = Object.assign({text: ""}, it.banner, {on: el.checked}); phSave(); PUI.prepared = null; ONE = null; rerender(); return true; }
   if (el.id === "bnTx"){ const it = curItem(); const v = el.value.replace(/\s*\n\s*/g, " ").trim(); it.banner = Object.assign({on:false}, it.banner, {text: v === bannerDefault(it) ? "" : v}); phSave(); PUI.prepared = null; ONE = null; rerender(); return true; }
   return false; }
-async function edSave(){
-  const d = ED.draft;
+// v1.7.0 で足した項目。旧データに無く、空のまま保存するときは項目自体を足さない（同期の差分・帳簿の履歴を無用に増やさない）
+const NEW_KEYS_V170 = ["store","tcgForm","cert","urlM","urlY","urlR","listTitle","listDesc","tags","draftSt","voucher"];
+async function edSave(force){
+  // 下書き（ED.draft）は書き換えず写しに入力を重ねる（未入力の確認で「戻って入力する」を選んだあと、もう一度保存しても同じ結果になるように）
+  const orig = ED.draft, d = JSON.parse(JSON.stringify(orig));
   for (const el of document.querySelectorAll("#edForm [name]")) d[el.name] = el.value;
-  for (const k of ["soldPrice","cost","ship","pack","other","listPrice"]) if (d[k] !== "") d[k] = num(d[k]);
+  for (const k of ["soldPrice","cost","ship","pack","other"]) if (d[k] !== "") d[k] = num(d[k]);
   d.feeRate = d.feeRate === "" ? "" : num(d.feeRate);
   { const c = S.settings.ch[d.soldCh]; if (c && d.feeRate === num(c.fee)) d.feeRate = ""; } // 販路と同じ率なら個別指定しない（設定変更に追随）
   d.soldFee = calc(d).fee;
   d.condChips = [...document.querySelectorAll("#condChips .chip.on")].map(b => b.dataset.c);
+  // v1.7.0 §3 証憑（既定は「なし」）
+  { const v = document.getElementById("edVoucher"); d.voucher = !!(v && v.checked); }
+  // v1.7.0 §1 タグは元が配列なら配列で保存
+  if (Array.isArray(orig.tags)) d.tags = String(d.tags || "").split(/[\s,、]+/).filter(Boolean);
+  // v1.7.0 §9 URL は前後の空白を落とす（旧 listUrl はそのまま残す）
+  for (const [, f] of URL_CH) d[f] = String(d[f] ?? "").trim();
+  // v1.7.0 §1 下書きの状態。出品済みにしたら、在庫（仕入れ済み・候補）は出品中にし、出品日が空なら今日。出品中以降は常に出品済み
+  if (d.draftSt === "listed" && (d.st === "stock" || d.st === "cand")){ d.st = "listed"; if (!normDate(d.listDate)) d.listDate = today(); }
+  if (["listed","deal","sold"].includes(d.st)) d.draftSt = "listed";
+  else if (!DRAFT_KEYS.includes(d.draftSt) || d.draftSt === "listed") d.draftSt = "wait";
+  // 出品中以降の「出品済み」はステータスから導けるので、元に draftSt が無ければ足さない
+  for (const k of NEW_KEYS_V170) if (!(k in orig) && (d[k] === "" || d[k] === false || (k === "draftSt" && (d[k] === "wait" || ["listed","deal","sold"].includes(d.st))) || (Array.isArray(d[k]) && !d[k].length))) delete d[k];
+  // v1.7.0 §2 申告に要る項目の未入力は、保存前に明示して確認する（黙って欠落させない）
+  const miss = missingOf(d);
+  if (miss.length && force !== true){
+    showModal(`<h3>未入力の項目があります</h3><div class="missing" id="missList">${miss.map(m => `・${esc(m)}`).join("<br>")}</div>
+      <p class="muted">このまま保存すると、申告の記録（帳簿）に欠けが残ります。入力してから保存するのがおすすめです。</p>
+      <div class="acts"><button class="btn" data-act="mclose">戻って入力する</button><button class="btn pri" data-act="edSaveForce">このまま保存</button></div>`);
+    return; }
   const i = S.items.findIndex(x => x.id === d.id);
   // v1.3.0 §3 写真（撮影データ ph と photos/thumb）は撮影画面で保存済みの最新を引き継ぐ（編集画面の下書きで上書きしない）
   if (i >= 0){ const cur = S.items[i]; for (const k of ["ph","photos","thumb"]){ if (k in cur) d[k] = cur[k]; else delete d[k]; } }
@@ -1927,9 +2101,32 @@ async function driveApply(d){
 
 /* ---------- ツール（§1） ---------- */
 function renderTools(){
-  $view.innerHTML = `<div class="seg" id="toolSeg"><button class="${UI.tool === "tpl" ? "on" : ""}" data-act="toolSw" data-v="tpl">定型文</button><button class="${UI.tool === "calc" ? "on" : ""}" data-act="toolSw" data-v="calc">計算</button></div>
-  <div id="toolBody">${UI.tool === "calc" ? calcHTML() : tplHTML()}</div>`;
+  $view.innerHTML = `<div class="seg" id="toolSeg" style="grid-template-columns:1fr 1fr 1fr"><button class="${UI.tool === "tpl" ? "on" : ""}" data-act="toolSw" data-v="tpl">定型文</button><button class="${UI.tool === "calc" ? "on" : ""}" data-act="toolSw" data-v="calc">計算</button><button class="${UI.tool === "draft" ? "on" : ""}" data-act="toolSw" data-v="draft">下書き</button></div>
+  <div id="toolBody">${UI.tool === "calc" ? calcHTML() : UI.tool === "draft" ? draftHTML() : tplHTML()}</div>`;
   if (UI.tool === "calc"){ calcPaint(); calcLive(); }
+}
+
+/* ---------- v1.7.0 §1 出品下書き（待ち → 完成 → 出品済み） ----------
+   対象：待ち・完成＝仕入れ済み（束ねられた中身は除く）、出品済み＝出品中。出品済みかどうかはステータス st を正とする */
+function draftRows(k){ const mem = memberSet();
+  return S.items.filter(it => !mem.has(it) && (k === "listed" ? it.st === "listed" : it.st === "stock" && draftOf(it) === k)); }
+function draftHTML(){
+  const cur = DRAFT_KEYS.includes(UI.dflt) ? UI.dflt : "wait", rows = draftRows(cur);
+  const next = {wait: ["done", "完成にする"], done: ["listed", "出品済みにする"]}[cur];
+  return `<div class="chips" id="draftF">${DRAFT_KEYS.map(k => `<button class="chip ${cur === k ? "on" : ""}" data-act="dflt" data-v="${k}">${DRAFT_ST[k]} ${draftRows(k).length}</button>`).join("")}</div>
+  <div class="muted" style="margin-bottom:8px">${cur === "listed" ? "出品中の商品です（出品済み）。" : "仕入れ済みの商品の出品準備です。行をタップすると編集画面（13. 出品下書き）を開きます。"}</div>
+  <div id="draftList">${rows.length ? rows.map(it => `<div class="drow" data-act="edit" data-id="${esc(it.id)}" data-draft="${draftOf(it)}">
+    <div class="dn">${esc(it.name || "（名称未設定）")}</div>
+    <div class="dside"><span class="badge" data-k="draft">${DRAFT_ST[draftOf(it)]}</span>${next ? `<button class="stbtn" data-act="dadv" data-id="${esc(it.id)}" data-to="${next[0]}">${next[1]}</button>` : ""}</div>
+    <div class="dt">${hasVal(it.listTitle) ? esc(it.listTitle) : "出品タイトル未入力"}${hasVal(it.listDesc) ? "" : "・説明文未入力"}</div></div>`).join("") : `<div class="empty-note">${DRAFT_ST[cur]}の商品はありません</div>`}</div>`;
+}
+async function draftAdvance(id){
+  const it = S.items.find(x => String(x.id) === String(id)); if (!it || it.st !== "stock") return;
+  const k = draftOf(it);
+  if (k === "wait"){ it.draftSt = "done"; toast("完成にしました"); }
+  else if (k === "done"){ it.draftSt = "listed"; it.st = "listed"; if (!normDate(it.listDate)) it.listDate = today(); toast("出品済みにしました（ステータス：出品中）"); }
+  else return;
+  await saveState(); render();
 }
 
 /* ---------- §2 定型文（POST 統合版の定型文タブと同じ操作。データは取り込んだ templates をそのまま使う） ---------- */
@@ -2181,6 +2378,8 @@ document.addEventListener("click", async (e) => {
   const tabBtn = e.target.closest("#tabs button");
   if (tabBtn){ setTab(tabBtn.dataset.tab); return; }
   if (e.target.id === "fab"){ openNew(); return; }
+  // v1.7.0 §9 販路URLのリンクは行のタップ（編集を開く）にせず、そのまま新しいタブで開く
+  if (e.target.closest && e.target.closest("a.ulk[href]")) return;
   const el = e.target.closest("[data-act]"); if (!el) return;
   // v1.3.0 §3 写真の画面（.pst の中）は POST の操作表 PA へ（POST と同じく disabled と入力欄のクリックは無視）
   if (el.closest(".pst") && PA[el.dataset.act]){ if (el.disabled) return; if (e.target.tagName === "INPUT") return; e.preventDefault(); PA[el.dataset.act](el, e); return; }
@@ -2192,8 +2391,19 @@ document.addEventListener("click", async (e) => {
       document.getElementById("chartTip").textContent = `${mLabel(L.months[i])}：売上 ${yen(s.sales)}／コスト ${yen(s.cost)}／純利益 ${yen(s.profit)}`; break; }
     case "salesNew": openNew(); break;
     case "csv": download("seller_sales_" + today() + ".csv", buildCSV(csvRows()), "text/csv;charset=utf-8"); break;
-    case "complete": { e.stopPropagation(); const it = S.items.find(x => x.id === el.dataset.id);
-      if (it){ it.st = "sold"; if (!it.soldDate) it.soldDate = today(); await saveState(); render(); toast("取引完了にしました"); } break; }
+    case "complete": case "completeGo": { e.stopPropagation(); const it = S.items.find(x => x.id === el.dataset.id); if (!it) break;
+      // v1.7.0 §2 売却済みにする前に、申告に要る項目の未入力を明示して確認する
+      const miss = missingOf(Object.assign({}, it, {st: "sold"}));
+      if (a === "complete" && miss.length){ showModal(`<h3>未入力の項目があります</h3><div class="missing" id="missList">${miss.map(m => `・${esc(m)}`).join("<br>")}</div>
+        <p class="muted">「${esc(it.name || "（名称未設定）")}」を取引完了にします。このままだと申告の記録（帳簿）に欠けが残ります。</p>
+        <div class="acts"><button class="btn" data-act="mclose">やめる</button><button class="btn" data-act="completeEdit" data-id="${esc(it.id)}">編集して入力する</button><button class="btn pri" data-act="completeGo" data-id="${esc(it.id)}">このまま完了にする</button></div>`); break; }
+      closeModal(); it.st = "sold"; if (!it.soldDate) it.soldDate = today(); await saveState(); render(); toast("取引完了にしました"); break; }
+    case "completeEdit": closeModal(); openEditor(el.dataset.id, null); { const s = document.querySelector('#edForm [name="st"]'); if (s) s.value = "sold"; const sd = document.querySelector('#edForm [name="soldDate"]'); if (sd && !sd.value) sd.value = today(); } break;
+    case "edSaveForce": closeModal(); edSave(true); break;
+    case "mview": LOC.masterView = el.dataset.v === "list" ? "list" : "grid"; saveLocal().catch(() => {}); render(); break;
+    case "dsel": { if (el.disabled) break; const h = document.querySelector('#edForm [name="draftSt"]'); if (h) h.value = el.dataset.v; for (const b of document.querySelectorAll("#edDraftSeg button")) b.classList.toggle("on", b === el); break; }
+    case "dflt": UI.dflt = DRAFT_KEYS.includes(el.dataset.v) ? el.dataset.v : "wait"; render(); break;
+    case "dadv": { e.stopPropagation(); draftAdvance(el.dataset.id); break; }
     case "edit": openEditor(el.dataset.id); break;
     case "mf": if (el.disabled) break; UI.masterF = el.dataset.f; render(); break;
     /* v1.2.0 §4 束ねる */
@@ -2228,7 +2438,7 @@ document.addEventListener("click", async (e) => {
     case "edDelete": if (!el.disabled) edDelete(); break;
     case "edDeleteGo": edDeleteGo(); break;
     case "cchip": el.classList.toggle("on"); break;
-    case "toolSw": UI.tool = el.dataset.v === "calc" ? "calc" : "tpl"; render(); break;
+    case "toolSw": UI.tool = ["calc","draft"].includes(el.dataset.v) ? el.dataset.v : "tpl"; render(); break;
     case "tChip": UI.tcat = el.dataset.v; render(); break;
     case "tplCopy": tplUse(el.dataset.id); break;
     case "fillGo": fillGo(); break;
@@ -2260,6 +2470,9 @@ document.addEventListener("input", (e) => {
   }
   if (e.target.closest && e.target.closest("#edForm")){
     if (e.target.name === "soldCh"){ const c = S.settings.ch[e.target.value]; if (c) document.querySelector('#edForm [name="feeRate"]').value = c.fee; }
+    if (e.target.name === "cat") edGenreSync();
+    if (e.target.name === "tcgForm") edTcgWarn();
+    if (URL_CH.some(x => x[1] === e.target.name)) edUrlSync(e.target.name);
     edRecalc();
     return;
   }
@@ -2274,6 +2487,7 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   if (e.target.closest && e.target.closest(".pst")){ phChange(e); return; }
+  if (e.target.closest && e.target.closest("#edForm")){ if (e.target.name === "tcgForm") edTcgWarn(); if (e.target.name === "cat") edGenreSync(); return; }
   if (e.target.dataset && e.target.dataset.cset) calcSetSave(e.target.dataset.cset, e.target.value);
 });
 document.addEventListener("toggle", (e) => {
@@ -2301,7 +2515,9 @@ window.__seller = {get S(){ return S; }, ready, calc, monthAgg, parseBackup, bui
   get SEGOK(){ return SEGOK; }, loadSeg, onCode, startScan, stopScan, regOpen, regPendShow, shootHTML, PA, phPeek, guessFlags, regen, mkDup, finalize,
   __setSeg(seg){ SEGP = seg ? Promise.resolve(seg) : null; SEGOK = !!seg; },
   // v1.5.0 確認用（ドライブ同期）
-  mergeDriveData, jcanon, driveNorm, driveSync, driveClick, gsiInit, DRIVE, GSI_CLIENT_ID, DRIVE_SCOPE};
+  mergeDriveData, jcanon, driveNorm, driveSync, driveClick, gsiInit, DRIVE, GSI_CLIENT_ID, DRIVE_SCOPE,
+  // v1.7.0 確認用
+  genreOf, genreOfCat, COND_SETS, TCG_FORMS, draftOf, draftRows, draftAdvance, missingOf, safeUrl, urlRaw, urlLinks, openbdGet, isOpenbdTarget, priceOf, gridPrice, edSave, OPENBD};
 gsiLoad();   // v1.5.0 GIS の読み込み（失敗しても他の機能には影響しない）
 </script>
 </body>
